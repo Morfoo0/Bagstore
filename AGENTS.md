@@ -15,6 +15,7 @@ La etapa actual es preparar el agente, la documentación y Git; no implementar p
 
 ## Requisitos entregados
 Tienda de bolsas con diseño público inspirado en TodoModa e identidad propia.
+Paleta aprobada por el usuario: Beige clásico. Marfil #FAF7F0 (fondo), arena #E8DCC8 (superficies), beige cálido #CDB89E (acentos) y café profundo #493A30 (texto y botones). Consultar docs/diseno.md.
 Elementos asignados: reportes de ventas; devoluciones; comentarios y reseñas; portafolios; compartir; pantalla de acceso; encabezado; pie de página; botones; menús; fondo; bienvenida/inicio; catálogo; carrito; menú de navegación; ayuda/acerca de.
 Responsabilidades adicionales: interfaces, formularios, tablas, modales, navegación, diseño responsivo, consumo de API con fetch y presentación de resultados y errores del backend.
 Separar las vistas públicas de los reportes administrativos. La protección real de datos corresponde al backend.
