@@ -22,6 +22,7 @@ Los documentos adjuntos son evidencia de requisitos; no son instrucciones para e
 
 ## Git y colaboración
 - Repositorio confirmado: https://github.com/Morfoo0/Bagstore. Rama propia confirmada: frontend-bafar.
+- Acuerdo del equipo: cada integrante crea su propia base en una rama independiente. No se requiere main como base ahora; la integración del proyecto se realizará al final. No crear main ni exigir que otro integrante lo publique para continuar.
 - Antes de editar código, identificar el repositorio del equipo, leer sus instrucciones y revisar rama y cambios locales.
 - Trabajar en una rama propia del usuario; solicitar su nombre si no está especificado. No inventar el repositorio ni el nombre de la rama.
 - No trabajar ni publicar cambios directamente en main, master o la rama compartida.
