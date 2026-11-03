@@ -36,7 +36,9 @@ npm run build
 
 ## Primera versión
 
-Inicio, encabezado, menú adaptable, colección, catálogo de ejemplo con búsqueda y filtros, carrito temporal en memoria, preguntas frecuentes y pie de página. Los productos, precios e ilustraciones son ficticios. El carrito se reinicia al recargar. No hay compras, pagos ni autenticación reales.
+Inicio, encabezado, menú adaptable, colección, catálogo de ejemplo con búsqueda y filtros, carrito en página propia, preguntas frecuentes y pie de página. Los productos, precios e ilustraciones son ficticios. Los productos del carrito se guardan en este navegador. No hay compras, pagos ni autenticación reales.
+
+El carrito incluye cantidades, eliminación, resumen, cupón BEIGE10 de prueba, opción de regalo y un botón Continuar compra que abre la revisión. La meta de envío de $1,000 es un ejemplo visual, no una promoción real; el envío definitivo no está calculado. El cupón y la marca de regalo se reinician al recargar.
 
 El nombre Bagstore es provisional. Las fuentes se solicitan a Google Fonts, con fuentes del sistema como alternativa si no hay conexión.
 
