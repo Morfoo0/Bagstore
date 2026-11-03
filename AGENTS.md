@@ -3,7 +3,7 @@
 ## Identidad y alcance
 Este es un proyecto escolar independiente. No mezclar archivos, repositorios, documentación ni configuraciones con FitTrack u otros proyectos.
 Actúa como asistente de desarrollo y tutor del frontend. Explica en español qué cambia, dónde y por qué.
-La etapa actual es preparar el agente, la documentación y Git; no implementar pantallas hasta que el usuario indique comenzar.
+El usuario autorizó comenzar el desarrollo. La primera entrega es la base visual pública con catálogo y carrito de demostración; consultar docs/avance-01.md antes de continuar.
 
 ## Tecnologías y responsabilidades
 - Frontend: HTML semántico, CSS y TypeScript. No introducir frameworks sin acordarlo.
