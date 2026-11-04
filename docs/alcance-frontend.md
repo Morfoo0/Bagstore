@@ -39,7 +39,7 @@ Propuesta de pantallas derivada de las operaciones confirmadas:
 - Existencias: consulta y formulario para el ajuste que autorice el backend.
 - Reportes de ventas ya contemplados en la asignación original.
 
-Estado: todas las pantallas administrativas están pendientes. Los campos de formularios, reglas y acciones exactas se acordarán con el equipo. No asumir que eliminar y desactivar significan lo mismo; confirmar cuál operación admite la API y sus restricciones.
+Estado: estructura del panel, navegación y consulta de productos/categorías de ejemplo implementadas. Pantalla de acceso implementada sin autenticación real. Alta, edición, eliminación/desactivación, gestión de categorías/colecciones/existencias y reportes siguen pendientes. Los campos de formularios, reglas y acciones exactas se acordarán con el equipo. No asumir que eliminar y desactivar significan lo mismo; confirmar cuál operación admite la API y sus restricciones.
 
 ## Reparto con backend
 

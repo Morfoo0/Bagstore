@@ -20,6 +20,67 @@
       <nav id="navigation" class="navigation" aria-label="Navegación principal"><a href="#inicio">Inicio</a><a href="#catalogo" data-category="Todas">Todas las bolsas</a><a href="#catalogo" data-category="Tote">Tote bags</a><a href="#catalogo" data-category="Crossbody">Crossbody</a><a href="#catalogo" data-category="Mini">Mini bags</a><a href="#colecciones">La colección</a><a href="#ayuda">Ayuda</a></nav>
     </header>
     <main id="contenido">
+      <section id="access-page" class="access-page" hidden aria-labelledby="access-title">
+        <div class="access-story">
+          <p class="eyebrow">UN ESPACIO PARA TI</p>
+          <h2>Tu mundo.<br/>Todo en<br/><em>su lugar.</em></h2>
+          <p>Las favoritas de hoy.<br/>Las posibilidades de mañana.</p>
+          <div class="access-illustration" aria-hidden="true"><span>b.</span><i></i></div>
+          <span class="access-story-caption">BAGSTORE / EVERYDAY ESSENTIALS</span>
+        </div>
+        <div class="access-form-area">
+          <a href="#inicio" class="access-back">← Volver a la tienda</a>
+          <div class="access-form-wrap">
+            <p class="eyebrow">QUÉ GUSTO VERTE POR AQUÍ</p>
+            <h1 id="access-title" tabindex="-1">Bienvenida de nuevo.</h1>
+            <p class="access-intro">Ingresa a tu espacio de Bagstore.</p>
+            <p class="access-demo-note">Prototipo escolar. El inicio de sesión aún no está conectado. Usa datos ficticios para probar el formulario.</p>
+            <form id="access-form">
+              <label for="access-email">Correo electrónico</label>
+              <input id="access-email" name="email" type="email" placeholder="tu@correo.com" autocomplete="username" maxlength="254" required/>
+              <label for="access-password">Contraseña</label>
+              <div class="password-field"><input id="access-password" name="password" type="password" placeholder="Ingresa tu contraseña" autocomplete="current-password" required/><button id="password-toggle" type="button" aria-label="Mostrar contraseña" aria-pressed="false">Mostrar</button></div>
+              <p id="access-feedback" class="access-feedback" role="alert" tabindex="-1" hidden></p>
+              <button id="access-submit" class="button" type="submit">Iniciar sesión</button>
+            </form>
+            <div class="preview-divider"><span>¿Quieres conocer el panel?</span></div>
+            <a href="#admin" id="admin-preview-link" class="access-preview-link">Explorar panel de demostración <span aria-hidden="true">↗</span></a>
+            <p class="access-preview-note">Vista previa sin cuenta ni permisos reales. No modifica productos ni datos del equipo.</p>
+          </div>
+          <span class="access-form-caption">TU MUNDO, SIEMPRE CONTIGO.</span>
+        </div>
+      </section>
+      <section id="admin-page" class="admin-page" hidden aria-label="Panel administrativo de demostración">
+        <aside class="admin-sidebar">
+          <a class="wordmark" href="#inicio" aria-label="Volver a Bagstore">bagstore<span>®</span></a>
+          <p class="admin-sidebar-label">ESPACIO DE ADMINISTRACIÓN</p>
+          <nav aria-label="Navegación del panel">
+            <a href="#admin" data-admin-link="resumen"><span aria-hidden="true">◫</span> Resumen</a>
+            <a href="#admin/productos" data-admin-link="productos"><span aria-hidden="true">◇</span> Productos</a>
+            <a href="#admin/categorias" data-admin-link="categorias"><span aria-hidden="true">☷</span> Categorías</a>
+            <a href="#admin/colecciones" data-admin-link="colecciones"><span aria-hidden="true">◧</span> Colecciones</a>
+            <a href="#admin/existencias" data-admin-link="existencias"><span aria-hidden="true">▤</span> Existencias</a>
+            <a href="#admin/reportes" data-admin-link="reportes"><span aria-hidden="true">↗</span> Reportes de ventas</a>
+          </nav>
+          <div class="admin-sidebar-bottom"><span class="admin-tag">VISTA PREVIA</span><p>Explora la estructura.<br/>Los datos son de ejemplo.</p><a href="#inicio">← Volver a la tienda</a></div>
+        </aside>
+        <div class="admin-workspace">
+          <header class="admin-topbar"><span>BAGSTORE / PANEL</span><div><span class="demo-dot" aria-hidden="true"></span> Sin sesión real <a href="#acceso">Salir de vista previa ↗</a></div></header>
+          <div class="admin-content">
+            <div class="admin-notice"><strong>Estás en una demostración.</strong> No hay conexión con la API ni permisos administrativos concedidos.</div>
+            <div class="admin-heading"><p class="eyebrow">TU ESPACIO DE TRABAJO</p><h1 id="admin-title" tabindex="-1"></h1><p id="admin-subtitle"></p></div>
+            <div data-admin-section="resumen">
+              <div class="admin-stat-grid"><article><span>PRODUCTOS DE EJEMPLO</span><strong id="admin-product-count"></strong><a href="#admin/productos">Explorar catálogo →</a></article><article><span>CATEGORÍAS DE EJEMPLO</span><strong id="admin-category-count"></strong><a href="#admin/categorias">Ver categorías →</a></article><article><span>CONEXIÓN AL SERVIDOR</span><strong class="status-word">Pendiente</strong><small>Python + PostgreSQL</small></article></div>
+              <div class="admin-roadmap"><div><p class="eyebrow">PASO A PASO</p><h2>Construyendo tu tienda.</h2><p>Esta es la estructura inicial del panel. Las operaciones se incorporarán con sus formularios y validaciones.</p></div><ol><li><span>01</span><div><strong>Base visual y navegación</strong><small>Disponible en esta vista previa</small></div><span class="admin-tag">LISTO</span></li><li><span>02</span><div><strong>Crear y editar productos</strong><small>Formularios y confirmaciones</small></div><span class="admin-tag muted">SIGUIENTE</span></li><li><span>03</span><div><strong>Gestión e integración</strong><small>Categorías, colecciones, existencias y API</small></div><span class="admin-tag muted">PENDIENTE</span></li></ol></div>
+            </div>
+            <section data-admin-section="productos" hidden aria-label="Productos de ejemplo"><div class="admin-card"><div class="admin-card-heading"><h2>Catálogo de prueba</h2><span class="admin-tag">SOLO CONSULTA</span></div><div class="admin-table-scroll" role="region" aria-label="Tabla de productos; desplaza para ver todas las columnas" tabindex="0"><table class="admin-table"><caption class="sr-only">Productos ficticios del catálogo</caption><thead><tr><th scope="col">Producto</th><th scope="col">Categoría</th><th scope="col">Color</th><th scope="col">Precio MXN</th><th scope="col">Origen</th></tr></thead><tbody id="admin-product-rows"></tbody></table></div><p class="admin-card-note">La tabla usa los mismos datos de ejemplo que la tienda. No incluye aún alta, edición, eliminación ni stock real.</p></div></section>
+            <section data-admin-section="categorias" hidden aria-label="Categorías de ejemplo"><div id="admin-categories" class="admin-category-grid"></div><p class="admin-card-note">Consulta inicial. Los formularios para gestionar categorías están pendientes.</p></section>
+            <section data-admin-section="colecciones" class="admin-empty-card" hidden><span aria-hidden="true">◧</span><h2>Las próximas colecciones empiezan aquí.</h2><p>Aún no hay datos de colecciones definidos. La página editorial de la tienda es una propuesta visual.</p><span class="admin-tag muted">GESTIÓN PENDIENTE</span></section>
+            <section data-admin-section="existencias" class="admin-empty-card" hidden><span aria-hidden="true">▤</span><h2>El inventario llegará con el equipo.</h2><p>Falta acordar el contrato de existencias con Python. No mostramos cantidades ficticias como si fueran stock real.</p><span class="admin-tag muted">INTEGRACIÓN PENDIENTE</span></section>
+            <section data-admin-section="reportes" class="admin-empty-card" hidden><span aria-hidden="true">↗</span><h2>Las ventas contarán su historia.</h2><p>Los reportes se construirán cuando definamos los datos de ventas y sus filtros. Todavía no hay métricas reales.</p><span class="admin-tag muted">REPORTES PENDIENTES</span></section>
+          </div>
+        </div>
+      </section>
       <section id="cart-page" class="cart-page" hidden aria-label="Carrito y revisión de compra">
         <div class="wrap">
           <nav class="cart-breadcrumb" aria-label="Ruta de navegación"><a href="#inicio">Inicio</a><span>/</span><span>Mi carrito</span></nav>

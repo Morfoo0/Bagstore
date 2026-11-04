@@ -43,3 +43,9 @@ El carrito incluye cantidades, eliminación, resumen, cupón BEIGE10 de prueba, 
 El nombre Bagstore es provisional. Las fuentes se solicitan a Google Fonts, con fuentes del sistema como alternativa si no hay conexión.
 
 Consultar docs/avance-01.md para el mapa de archivos, comprobaciones y pendientes.
+
+## Acceso y vista previa administrativa
+
+Mi cuenta abre #acceso. El formulario valida los campos pero informa que falta conectar la autenticación; no se envían ni guardan las credenciales. Para revisar la interfaz sin cuenta, usar Explorar panel de demostración.
+
+El panel #admin permite navegar por las secciones y consultar productos/categorías ficticios. No hay permisos reales ni operaciones administrativas conectadas. Ver docs/avance-03-acceso-panel.md. El siguiente entregable propuesto es crear y editar productos con formularios y confirmación de desactivación de ejemplo.

@@ -1,5 +1,7 @@
 import './styles.css';
 import './cart.css';
+import './access.css';
+import { setupAccess } from './components/access';
 import { createCart } from './components/cart';
 import { products } from './data/products';
 import { bagArt } from './components/bag';
@@ -82,9 +84,9 @@ el('#products').addEventListener('click', event => {
   shoppingCart.add(id);
 });
 document.querySelectorAll<HTMLButtonElement>('[data-close]').forEach(button => button.addEventListener('click', () => el<HTMLDialogElement>(`#${button.dataset.close}`).close()));
-el('#account').addEventListener('click', () => info('Tu cuenta, próximamente', 'La pantalla de acceso es parte del siguiente entregable. El inicio de sesión real dependerá de la API del equipo de backend. Por ahora no solicitamos ni guardamos contraseñas.'));
 el('#returns-info').addEventListener('click', () => info('Cambios y devoluciones', 'El formulario y la política se definirán con el equipo. Esta demostración todavía no procesa solicitudes de devolución.'));
 renderProducts();
 
 
 const shoppingCart = createCart(notify);
+setupAccess();

@@ -64,9 +64,10 @@ export function createCart(notify: (message: string) => void): { add: (id: numbe
     element('#review-discount').textContent = coupon ? `BEIGE10: −${money(discount)}` : 'Sin cupón';
   }
   function route() {
+    if (location.hash === '#acceso' || location.hash === '#admin' || location.hash.startsWith('#admin/')) return;
     const isCart = location.hash === '#carrito' || location.hash === '#checkout';
     const isCheckout = location.hash === '#checkout' && totals().count > 0;
-    for (const child of element('main').children) if (child instanceof HTMLElement) child.hidden = child.id === 'cart-page' ? !isCart : isCart;
+    for (const child of element('main').children) if (child instanceof HTMLElement) child.hidden = child.id === 'cart-page' ? !isCart : isCart || ['access-page', 'admin-page'].includes(child.id);
     element('#cart-view').hidden = isCheckout;
     element('#checkout-view').hidden = !isCheckout;
     element('#cart-step-1').classList.toggle('current', !isCheckout);
