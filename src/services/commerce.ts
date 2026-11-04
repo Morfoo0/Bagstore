@@ -1,7 +1,7 @@
 import type { Product } from '../types/product';
 export interface DemoCollection { id: string; name: string; description: string; productIds: number[]; active: boolean; }
 export interface Review { id: string; productId: number; name: string; rating: number; comment: string; date: string; }
-export interface OrderItem { productId: number; name: string; qty: number; price: number; }
+export interface OrderItem { productId: number; name: string; color?: string; qty: number; price: number; }
 export interface DemoOrder { id: string; date: string; items: OrderItem[]; subtotal: number; discount: number; shipping: number; total: number; delivery: string; payment: string; }
 export interface DemoReturn { id: string; orderId: string; productId: number; reason: string; comment: string; status: 'Solicitada' | 'En revisión' | 'Resuelta'; date: string; }
 interface StockChange { id: string; productId: number; quantity: number; reason: string; date: string; }
@@ -16,7 +16,7 @@ const integer = (n: unknown, min = 0, max = 99999): n is number => Number.isInte
 function validState(s: State) {
   return s && Array.isArray(s.collections) && s.collections.every(c => idOK(c.id) && textOK(c.name, 2, 60) && textOK(c.description, 0, 500) && typeof c.active === 'boolean' && Array.isArray(c.productIds) && c.productIds.every(id => integer(id, 1)))
     && Array.isArray(s.reviews) && s.reviews.every(r => idOK(r.id) && integer(r.productId, 1) && textOK(r.name, 2, 40) && integer(r.rating, 1, 5) && textOK(r.comment, 5, 1000) && dateOK(r.date))
-    && Array.isArray(s.orders) && s.orders.every(o => idOK(o.id) && dateOK(o.date) && Array.isArray(o.items) && o.items.every(i => integer(i.productId, 1) && textOK(i.name, 1, 80) && integer(i.qty, 1, 10) && Number.isFinite(i.price) && i.price > 0) && [o.total, o.subtotal, o.discount, o.shipping].every(n => Number.isFinite(n) && n >= 0) && textOK(o.delivery, 1, 50) && textOK(o.payment, 1, 50))
+    && Array.isArray(s.orders) && s.orders.every(o => idOK(o.id) && dateOK(o.date) && Array.isArray(o.items) && o.items.every(i => integer(i.productId, 1) && textOK(i.name, 1, 80) && (i.color === undefined || textOK(i.color, 1, 40)) && integer(i.qty, 1, 10) && Number.isFinite(i.price) && i.price > 0) && [o.total, o.subtotal, o.discount, o.shipping].every(n => Number.isFinite(n) && n >= 0) && textOK(o.delivery, 1, 50) && textOK(o.payment, 1, 50))
     && Array.isArray(s.returns) && s.returns.every(r => idOK(r.id) && idOK(r.orderId) && integer(r.productId, 1) && textOK(r.reason, 2, 80) && textOK(r.comment, 5, 1000) && ['Solicitada', 'En revisión', 'Resuelta'].includes(r.status) && dateOK(r.date))
     && s.stock && typeof s.stock === 'object' && Object.entries(s.stock).every(([key, n]) => /^\d+$/.test(key) && integer(n))
     && Array.isArray(s.changes) && s.changes.every(c => idOK(c.id) && integer(c.productId, 1) && integer(c.quantity) && textOK(c.reason, 3, 200) && dateOK(c.date));
@@ -54,7 +54,7 @@ export function createCommerceRepository(storage?: StoragePort) {
     createOrder(lines: { id: number; qty: number }[], products: Product[], coupon: boolean, shipping: number, delivery: string, payment: string) {
       if (!lines.length || new Set(lines.map(l => l.id)).size !== lines.length || ![0, 79].includes(shipping) || !['Recoger en tienda (demo)', 'Envío a domicilio (demo)'].includes(delivery) || !['Tarjeta de prueba', 'Transferencia de prueba'].includes(payment)) throw Error('Revisa los productos y las opciones de entrega y pago.');
       if ((delivery === 'Recoger en tienda (demo)' && shipping !== 0) || (delivery === 'Envío a domicilio (demo)' && shipping !== 79)) throw Error('La tarifa no corresponde a la entrega seleccionada. Revisa tus opciones.');
-      const items = lines.map(line => { const p = products.find(p => p.id === line.id); if (!p || !Number.isFinite(p.price) || p.price <= 0 || !integer(line.qty, 1, 10) || line.qty > quantity(line.id)) throw Error('La cantidad seleccionada supera la disponibilidad de un producto. Revisa tu carrito.'); return { productId: p.id, name: p.name, price: p.price, qty: line.qty }; });
+      const items = lines.map(line => { const p = products.find(p => p.id === line.id); if (!p || !Number.isFinite(p.price) || p.price <= 0 || !integer(line.qty, 1, 10) || line.qty > quantity(line.id)) throw Error('La cantidad seleccionada supera la disponibilidad de un producto. Revisa tu carrito.'); return { productId: p.id, name: p.name, color: p.label, price: p.price, qty: line.qty }; });
       const subtotal = round(items.reduce((n, p) => n + p.price * p.qty, 0)); const discount = coupon ? round(subtotal * .1) : 0;
       const order: DemoOrder = { id: id('demo'), date: new Date().toISOString(), items, subtotal, discount, shipping, total: round(subtotal - discount + shipping), delivery, payment };
       for (const p of items) state.stock[String(p.productId)] = quantity(p.productId) - p.qty;

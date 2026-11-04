@@ -3,10 +3,11 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { build } from 'esbuild';
 import { JSDOM } from 'jsdom';
+import { createCommerceRepository } from '../src/services/commerce.ts';
 
 const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 const bundle = await build({ entryPoints: ['src/main.ts'], bundle: true, write: false, format: 'iife', loader: { '.css': 'empty' }, define: { 'import.meta.env': '{}' }, logLevel: 'silent' });
-function page(hash = '#inicio') {
+function page(hash = '#inicio', initialStorage: Record<string, string> = {}) {
   const dom = new JSDOM(html, { url: `http://localhost/${hash}`, runScripts: 'outside-only', pretendToBeVisual: true });
   const w = dom.window;
   w.structuredClone = structuredClone;
@@ -14,6 +15,7 @@ function page(hash = '#inicio') {
   w.HTMLDialogElement.prototype.showModal = function () { this.open = true; };
   w.HTMLDialogElement.prototype.close = function () { this.open = false; this.dispatchEvent(new w.Event('close')); };
   const errors: unknown[] = []; w.addEventListener('error', e => errors.push(e.error));
+  for (const [key, value] of Object.entries(initialStorage)) w.localStorage.setItem(key, value);
   w.eval(bundle.outputFiles[0].text);
   const $ = (selector: string): any => { const node = w.document.querySelector(selector); assert.ok(node, `Falta ${selector}`); return node; };
   const set = (selector: string, value: string) => { $(selector).value = value; $(selector).dispatchEvent(new w.Event('input', { bubbles: true })); };
@@ -100,4 +102,40 @@ test('rutas directas de compra no permiten confirmar sin sesión', async () => {
 
 test('conexión API sin configurar muestra pendiente sin efectuar red', () => {
   const p = page('#admin/conexion'); try { p.$('#api-check').click(); assert.match(p.$('#api-status').textContent, /No se realizó ninguna petición/); assert.deepEqual(p.errors, []); } finally { p.dom.window.close(); }
+});
+
+function orderFixture() {
+  const entries: Record<string, string> = {};
+  const repo = createCommerceRepository({getItem: k => entries[k] ?? null, setItem: (k, v) => {entries[k] = v;}});
+  const order = repo.createOrder([{id:1,qty:2}], [{id:1,name:'Bolsa <script>texto</script>',price:100.25} as any], true, 79, 'Envío a domicilio (demo)', 'Tarjeta de prueba');
+  return { entries, order };
+}
+test('detalle usa productos del pedido, vincula guía y solicita impresión del ticket', async () => {
+  const {entries, order} = orderFixture(); const p = page('#admin/reportes', entries); try {
+    let printed = 0; p.w.print = () => { printed++; };
+    p.$(`[data-order-details="${order.id}"]`).click();
+    assert.equal(p.$('#order-detail').open, true); assert.match(p.$('.order-ticket').textContent, /BS-001/);
+    assert.match(p.$('.order-ticket').textContent, /Bolsa <script>texto<\/script>/);
+    assert.equal(p.w.document.querySelector('.order-ticket script'), null);
+    assert.match(p.$('.ticket-totals').textContent, /259.45/);
+    p.set('#order-carrier', 'Paquetería de prueba'); p.set('#order-tracking', 'GUIA-123'); p.submit('#order-shipment-form');
+    assert.match(p.$('.ticket-shipment').textContent, /GUIA-123/);
+    assert.equal(JSON.parse(p.w.localStorage.getItem('bagstore.shipment-references.v1')!)[order.id].tracking, 'GUIA-123');
+    p.$('#order-ticket-print').click(); assert.equal(printed, 1); assert.equal(p.w.document.body.classList.contains('printing-order'), true);
+    p.w.dispatchEvent(new p.w.Event('afterprint')); assert.equal(p.w.document.body.classList.contains('printing-order'), false);
+    p.$('#order-detail-close').click(); assert.equal(p.$('#order-detail').open, false);
+    p.$(`[data-order-details="${order.id}"]`).click(); assert.equal(p.$('#order-tracking').value, 'GUIA-123');
+    await p.route('#admin/productos'); assert.equal(p.$('#order-detail').open, false); assert.deepEqual(p.errors, []);
+  } finally { p.dom.window.close(); }
+});
+test('referencia guardada persiste al recargar y guía corrupta muestra aviso', () => {
+  const {entries, order} = orderFixture();
+  entries['bagstore.shipment-references.v1'] = JSON.stringify({[order.id]: {carrier:'Mensajería',tracking:'ABC-987'}});
+  const p = page('#admin/reportes', entries); try {
+    p.$(`[data-order-details="${order.id}"]`).click(); assert.equal(p.$('#order-tracking').value, 'ABC-987');
+    assert.deepEqual(p.errors, []);
+  } finally { p.dom.window.close(); }
+  entries['bagstore.shipment-references.v1'] = '{bad'; const q = page('#admin/reportes', entries); try {
+    q.$(`[data-order-details="${order.id}"]`).click(); assert.match(q.$('#order-detail-message').textContent, /No pudimos recuperar/); assert.deepEqual(q.errors, []);
+  } finally { q.dom.window.close(); }
 });

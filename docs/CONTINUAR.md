@@ -8,7 +8,11 @@
 - Cada integrante trabaja en su propia base y rama. Nuestra rama: frontend-bafar. No crear main para continuar.
 - No ejecutar push ni publicar PR hasta nueva instrucción expresa del usuario. Se permiten commits locales.
 
-## Estado vigente — entrega 8
+## Estado vigente — entrega 9
+
+Reportes tiene Detalles por pedido y ticket de preparación imprimible, con productos históricos, cantidades, color si se registró, importes y revisión de paquete. Referencia local de paquetería/guía existente por pedido. No genera etiqueta oficial ni contiene domicilio en pedidos locales. Consultar docs/avance-09-detalles-ticket.md. Validación: 39 pruebas y compilación correctas; impresión física/PDF pendiente. Se mantiene la cuenta obligatoria y la dependencia de API.
+
+## Historial — entrega 8
 
 Cuenta obligatoria para continuar la compra. Registro en #registro, acceso desde carrito y guardas de rutas de compra implementadas. El carrito se conserva. Sin API de cuentas, la compra queda detenida en acceso; no se simula sesión. El retorno tras autenticación real debe conectarse con Python. Consultar docs/avance-08-registro-acceso-compra.md. Validación actual: 37 pruebas y compilación correctas.
 
