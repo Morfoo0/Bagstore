@@ -68,18 +68,36 @@ test('reseñas se guardan como texto y compartir ofrece enlace local', async () 
     p.$('[data-share="1"]').click(); await new Promise(resolve => setTimeout(resolve, 5)); assert.equal(p.$('#share-dialog').open, true); assert.match(p.$('#share-url').value, /#producto\/1/); assert.deepEqual(p.errors, []);
   } finally { p.dom.window.close(); }
 });
-test('compra de prueba genera reporte y permite solicitar devolución', async () => {
+test('comprar exige acceso y conserva carrito al cambiar a registro', async () => {
   const p = page(); try {
-    p.$('#products [data-add="1"]').click(); await p.route('#checkout'); p.$('#demo-purchase').click(); await new Promise(resolve => setTimeout(resolve, 5));
-    p.set('#delivery-postcode', '00000'); p.submit('#delivery-form'); await new Promise(resolve => setTimeout(resolve, 5));
-    p.$('#purchase-form input[name="ack"]').checked = true; p.submit('#purchase-form'); await new Promise(resolve => setTimeout(resolve, 5));
-    assert.match(p.$('#extra-page h1').textContent, /pedido de vista previa/);
-    const order = JSON.parse(p.w.localStorage.getItem('bagstore.commerce.v1')!).orders[0]; assert.equal(order.total, 599);
-    await p.route('#admin/reportes'); assert.match(p.$('#report-body').textContent, new RegExp(order.id));
-    await p.route('#devoluciones'); p.set('#return-order', order.id); p.$('#return-order').dispatchEvent(new p.w.Event('change', { bubbles: true })); p.set('#return-product', '1'); p.set('#return-reason', 'Otro motivo'); p.set('#return-comment', 'Solicitud escolar de prueba'); p.submit('#return-form');
-    assert.match(p.$('#extra-page').textContent, /Solicitada/); assert.deepEqual(p.errors, []);
+    p.$('#products [data-add="1"]').click(); await p.route('#carrito');
+    p.$('#checkout-button').click(); await new Promise(resolve => setTimeout(resolve, 10));
+    assert.equal(p.w.location.hash, '#acceso'); assert.equal(p.$('#purchase-access-note').hidden, false);
+    assert.equal(p.$('#cart-count').textContent, '1');
+    await p.route('#registro'); assert.equal(p.$('#register-form').hidden, false); assert.equal(p.$('#access-form').hidden, true);
+    assert.equal(p.$('#cart-count').textContent, '1'); assert.deepEqual(p.errors, []);
   } finally { p.dom.window.close(); }
 });
+test('registro rechaza contraseñas distintas y no crea cuenta sin API', async () => {
+  const p = page('#registro'); try {
+    p.set('#register-name', 'Ana'); p.set('#register-email', 'ana@example.test'); p.set('#register-password', 'Prueba123'); p.set('#register-confirm', 'Otra12345');
+    p.submit('#register-form'); assert.match(p.$('#register-feedback').textContent, /no coinciden/);
+    p.set('#register-confirm', 'Prueba123'); p.submit('#register-form'); await new Promise(resolve => setTimeout(resolve, 5));
+    assert.match(p.$('#register-feedback').textContent, /aún no está disponible/); assert.equal(p.$('#register-password').value, ''); assert.equal(p.$('#register-confirm').value, '');
+    assert.doesNotMatch(JSON.stringify(p.w.localStorage), /Prueba123/);
+    await p.route('#acceso'); assert.equal(p.$('#register-form').hidden, true); assert.deepEqual(p.errors, []);
+  } finally { p.dom.window.close(); }
+});
+test('rutas directas de compra no permiten confirmar sin sesión', async () => {
+  for (const hash of ['#compra/entrega', '#compra/pago', '#compra/confirmacion']) {
+    const p = page(hash); try {
+      await new Promise(resolve => setTimeout(resolve, 10)); assert.equal(p.w.location.hash, '#acceso');
+      assert.equal(p.w.document.querySelector('#purchase-form'), null);
+      assert.equal(p.w.localStorage.getItem('bagstore.commerce.v1'), null); assert.deepEqual(p.errors, []);
+    } finally { p.dom.window.close(); }
+  }
+});
+
 test('conexión API sin configurar muestra pendiente sin efectuar red', () => {
   const p = page('#admin/conexion'); try { p.$('#api-check').click(); assert.match(p.$('#api-status').textContent, /No se realizó ninguna petición/); assert.deepEqual(p.errors, []); } finally { p.dom.window.close(); }
 });

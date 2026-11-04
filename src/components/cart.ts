@@ -1,3 +1,4 @@
+import { requireCustomerAccess } from '../services/auth';
 import { escapeHtml } from '../ui';
 import type { CommerceRepository } from '../services/commerce';
 import { products } from '../data/products';
@@ -71,7 +72,7 @@ export function createCart(notify: (message: string) => void, commerce: Commerce
     element('#review-discount').textContent = coupon ? `BEIGE10: −${money(discount)}` : 'Sin cupón';
   }
   function route() {
-    if (location.hash === '#acceso' || location.hash === '#admin' || location.hash.startsWith('#admin/')) return;
+    if (location.hash === '#registro' || location.hash === '#acceso' || location.hash === '#admin' || location.hash.startsWith('#admin/')) return;
     if (location.hash.startsWith('#producto/') || location.hash.startsWith('#coleccion/') || ['#devoluciones', '#portafolio'].includes(location.hash) || location.hash.startsWith('#compra/')) return;
     const isCart = location.hash === '#carrito' || location.hash === '#checkout';
     const isCheckout = location.hash === '#checkout' && totals().count > 0;
@@ -121,8 +122,8 @@ export function createCart(notify: (message: string) => void, commerce: Commerce
     render(); element<HTMLInputElement>('#coupon-code').focus();
   });
   element('#gift-option').addEventListener('change', event => { gift = (event.target as HTMLInputElement).checked; render(); });
-  element('#checkout-button').addEventListener('click', () => { if (totals().count) location.hash = 'checkout'; });
-  element('#demo-purchase').addEventListener('click', () => { if (totals().count) location.hash = 'compra/entrega'; });
+  element('#checkout-button').addEventListener('click', () => { if (totals().count && requireCustomerAccess()) location.hash = 'checkout'; });
+  element('#demo-purchase').addEventListener('click', () => { if (totals().count && requireCustomerAccess()) location.hash = 'compra/entrega'; });
   window.addEventListener('hashchange', () => { element('#demo-order-message').hidden = true; route(); });
   window.addEventListener('bagstore-products-changed', render);
   window.addEventListener('bagstore-commerce-changed', render);

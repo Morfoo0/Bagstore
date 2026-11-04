@@ -1,7 +1,7 @@
 import type { CatalogRepository } from '../services/catalogs';
 import { products } from '../data/products';
 import { setupProductManager } from './product-manager';
-import { AuthNotConfiguredError, signIn } from '../services/auth';
+import { AuthNotConfiguredError, signIn, signUp, purchaseDestination } from '../services/auth';
 
 function node<T extends HTMLElement = HTMLElement>(selector: string): T {
   const result = document.querySelector<T>(selector);
@@ -57,10 +57,37 @@ export function setupAccess(catalogs: CatalogRepository): void {
       form.setAttribute('aria-busy', 'false');
     }
   });
+  const registration = node<HTMLFormElement>('#register-form');
+  const registerPassword = node<HTMLInputElement>('#register-password');
+  const registerConfirm = node<HTMLInputElement>('#register-confirm');
+  const registerFeedback = node('#register-feedback');
+  const registerToggle = node<HTMLButtonElement>('#register-password-toggle');
+  function clearRegistrationPasswords() {
+    registerPassword.value = ''; registerConfirm.value = ''; registerPassword.type = 'password';
+    registerToggle.textContent = 'Mostrar'; registerToggle.setAttribute('aria-pressed', 'false'); registerToggle.setAttribute('aria-label', 'Mostrar contraseña');
+  }
+  registerToggle.addEventListener('click', () => {
+    const show = registerPassword.type === 'password'; registerPassword.type = show ? 'text' : 'password';
+    registerToggle.textContent = show ? 'Ocultar' : 'Mostrar'; registerToggle.setAttribute('aria-pressed', String(show)); registerToggle.setAttribute('aria-label', show ? 'Ocultar contraseña' : 'Mostrar contraseña');
+  });
+  registration.addEventListener('submit', async event => {
+    event.preventDefault(); registerFeedback.hidden = true;
+    if (!registration.reportValidity()) return;
+    if (registerPassword.value !== registerConfirm.value) {
+      registerFeedback.textContent = 'Las contraseñas no coinciden. Revisa ambos campos.'; registerFeedback.hidden = false; registerConfirm.focus(); return;
+    }
+    const button = node<HTMLButtonElement>('#register-submit'); button.disabled = true; button.textContent = 'Creando cuenta…'; registration.setAttribute('aria-busy', 'true');
+    try { await signUp({name: node<HTMLInputElement>('#register-name').value.trim(), email: node<HTMLInputElement>('#register-email').value.trim(), password: registerPassword.value}); }
+    catch (error) { registerFeedback.textContent = error instanceof AuthNotConfiguredError ? 'El registro aún no está disponible. Tu carrito se conserva; podrás continuar cuando habilitemos las cuentas.' : 'No pudimos crear tu cuenta. Inténtalo más tarde.'; registerFeedback.hidden = false; registerFeedback.focus(); }
+    finally { clearRegistrationPasswords(); button.disabled = false; button.textContent = 'Crear cuenta'; registration.setAttribute('aria-busy', 'false'); }
+  });
   node('#account').addEventListener('click', () => { location.hash = 'acceso'; });
 
   function route(): void {
-    const isAccess = location.hash === '#acceso';
+    const isRegister = location.hash === '#registro';
+    const isAccess = location.hash === '#acceso' || isRegister;
+    clearRegistrationPasswords(); registerFeedback.hidden = true;
+    if (isRegister) { password.value = ''; feedback.hidden = true; }
     const isAdmin = location.hash === '#admin' || location.hash.startsWith('#admin/');
     if (!isAccess) {
       password.value = '';
@@ -73,7 +100,14 @@ export function setupAccess(catalogs: CatalogRepository): void {
     if (!isAccess && !isAdmin) { password.value = ''; feedback.hidden = true; return; }
     for (const child of node('main').children) if (child instanceof HTMLElement) child.hidden = child.id !== (isAdmin ? 'admin-page' : 'access-page');
     if (isAccess) {
-      document.title = 'Acceso — Bagstore';
+      document.title = `${isRegister ? 'Crear cuenta' : 'Acceso'} — Bagstore`;
+      form.hidden = isRegister; registration.hidden = !isRegister;
+      node('#access-title').textContent = isRegister ? 'Tu próxima favorita te espera.' : 'Bienvenida de nuevo.';
+      node('.access-intro').textContent = isRegister ? 'Crea tu cuenta para comprar y consultar tus pedidos.' : 'Ingresa a tu espacio de Bagstore.';
+      node('#purchase-access-note').hidden = !purchaseDestination();
+      for (const [id, active] of [['login-tab', !isRegister], ['register-tab', isRegister]] as const) {
+        if (active) node('#' + id).setAttribute('aria-current', 'page'); else node('#' + id).removeAttribute('aria-current');
+      }
       node('#access-title').focus({ preventScroll: true });
     } else {
       const requested = location.hash.split('/')[1] ?? 'resumen';

@@ -35,6 +35,8 @@
             <h1 id="access-title" tabindex="-1">Bienvenida de nuevo.</h1>
             <p class="access-intro">Ingresa a tu espacio de Bagstore.</p>
             <p class="access-demo-note">El acceso a cuentas estará disponible próximamente. Mientras tanto, puedes explorar la tienda sin iniciar sesión.</p>
+            <p id="purchase-access-note" class="access-demo-note" hidden>Inicia sesión o crea una cuenta para continuar con tu compra. Tu carrito te espera.</p>
+            <nav class="account-tabs" aria-label="Opciones de cuenta"><a href="#acceso" id="login-tab">Iniciar sesión</a><a href="#registro" id="register-tab">Crear cuenta</a></nav>
             <form id="access-form">
               <label for="access-email">Correo electrónico</label>
               <input id="access-email" name="email" type="email" placeholder="tu@correo.com" autocomplete="username" maxlength="254" required/>
@@ -42,6 +44,15 @@
               <div class="password-field"><input id="access-password" name="password" type="password" placeholder="Ingresa tu contraseña" autocomplete="current-password" required/><button id="password-toggle" type="button" aria-label="Mostrar contraseña" aria-pressed="false">Mostrar</button></div>
               <p id="access-feedback" class="access-feedback" role="alert" tabindex="-1" hidden></p>
               <button id="access-submit" class="button" type="submit">Iniciar sesión</button>
+            </form>
+            <form id="register-form" hidden>
+              <label for="register-name">Nombre</label><input id="register-name" name="name" autocomplete="given-name" minlength="2" maxlength="80" required/>
+              <label for="register-email">Correo electrónico</label><input id="register-email" name="email" type="email" autocomplete="email" maxlength="254" required/>
+              <label for="register-password">Contraseña</label><div class="password-field"><input id="register-password" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="128" aria-describedby="register-password-help" required/><button id="register-password-toggle" type="button" aria-label="Mostrar contraseña" aria-pressed="false">Mostrar</button></div>
+              <p id="register-password-help" class="access-preview-note">Usa al menos 8 caracteres.</p>
+              <label for="register-confirm">Confirmar contraseña</label><input id="register-confirm" name="confirm" type="password" autocomplete="new-password" minlength="8" maxlength="128" required/>
+              <p id="register-feedback" class="access-feedback" role="alert" tabindex="-1" hidden></p>
+              <button id="register-submit" class="button" type="submit">Crear cuenta</button>
             </form>
             <div class="preview-divider"><span>¿Quieres conocer el panel?</span></div>
             <a href="#admin" id="admin-preview-link" class="access-preview-link">Vista previa de administración <span aria-hidden="true">↗</span></a>

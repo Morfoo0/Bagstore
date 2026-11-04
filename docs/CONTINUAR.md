@@ -8,7 +8,11 @@
 - Cada integrante trabaja en su propia base y rama. Nuestra rama: frontend-bafar. No crear main para continuar.
 - No ejecutar push ni publicar PR hasta nueva instrucción expresa del usuario. Se permiten commits locales.
 
-## Estado vigente — entrega 7
+## Estado vigente — entrega 8
+
+Cuenta obligatoria para continuar la compra. Registro en #registro, acceso desde carrito y guardas de rutas de compra implementadas. El carrito se conserva. Sin API de cuentas, la compra queda detenida en acceso; no se simula sesión. El retorno tras autenticación real debe conectarse con Python. Consultar docs/avance-08-registro-acceso-compra.md. Validación actual: 37 pruebas y compilación correctas.
+
+## Historial — entrega 7
 
 Textos de tienda y panel revisados: consultar docs/avance-07-textos-tienda.md. Se retiró la meta ficticia de envío, se aclararon totales y acciones del carrito, y se mantuvieron avisos de vista previa/sin cobros. 35 pruebas y compilación correctas. La integración real continúa pendiente.
 

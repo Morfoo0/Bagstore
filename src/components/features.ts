@@ -1,3 +1,4 @@
+import { requireCustomerAccess } from '../services/auth';
 import { products } from '../data/products';
 import { bagArt } from './bag';
 import { element as $, escapeHtml as h, money } from '../ui';
@@ -127,6 +128,7 @@ export function setupFeatures(commerce: CommerceRepository, _catalogs: CatalogRe
   }
   function route() {
     const hash = location.hash;
+    if (hash.startsWith('#compra/') && !requireCustomerAccess()) { extra.hidden = true; return; }
     renderCollections(); renderAdmin();
     let markup: string | undefined;
     if (hash.startsWith('#producto/')) markup = detail(Number(hash.split('/')[1]));
@@ -164,6 +166,7 @@ export function setupFeatures(commerce: CommerceRepository, _catalogs: CatalogRe
     if (form.id === 'return-form') { try { commerce.requestReturn(String(data.get('order')), Number(data.get('product')), String(data.get('reason')), String(data.get('comment'))); changed(); route(); notify('Solicitud registrada. Puedes consultar su estado aquí.'); } catch (error) { $('#return-error').textContent = error instanceof Error ? error.message : 'No pudimos registrar la solicitud.'; } }
     if (form.id === 'delivery-form') { shipping = data.get('delivery') === 'shipping' ? 79 : 0; delivery = shipping ? 'Envío a domicilio (demo)' : 'Recoger en tienda (demo)'; location.hash = 'compra/pago'; }
     if (form.id === 'purchase-form' && !placingOrder) {
+      if (!requireCustomerAccess()) return;
       placingOrder = true; $<HTMLButtonElement>('#purchase-submit').disabled = true;
       try { if (data.get('ack') !== 'on') throw Error('Confirma que entiendes las condiciones de esta vista previa.'); payment = String(data.get('payment')); const snapshot = cart.snapshot(); lastOrder = commerce.createOrder(snapshot.lines, products, snapshot.coupon, shipping, delivery, payment); cart.clear(); changed(); location.hash = 'compra/confirmacion'; }
       catch (error) { $('#purchase-error').textContent = error instanceof Error ? error.message : 'No pudimos guardar tu selección. Inténtalo de nuevo.'; $<HTMLButtonElement>('#purchase-submit').disabled = false; }
