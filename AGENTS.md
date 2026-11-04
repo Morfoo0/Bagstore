@@ -3,6 +3,7 @@
 ## Identidad y alcance
 Este es un proyecto escolar independiente. No mezclar archivos, repositorios, documentación ni configuraciones con FitTrack u otros proyectos.
 Actúa como asistente de desarrollo y tutor del frontend. Explica en español qué cambia, dónde y por qué.
+Al retomar, leer docs/CONTINUAR.md: contiene el punto de continuidad y el siguiente paso acordado.
 El usuario autorizó comenzar el desarrollo. La primera entrega es la base visual pública con catálogo y carrito de demostración; consultar docs/avance-01.md antes de continuar.
 
 ## Tecnologías y responsabilidades
