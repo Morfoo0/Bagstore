@@ -1,6 +1,6 @@
 # BagStore API
 
-Backend de BagStore construido con Python, FastAPI y Pydantic. En esta fase no existe conexión a PostgreSQL: los productos se almacenan temporalmente en memoria y los datos se pierden al reiniciar el servidor.
+Backend de BagStore construido con Python, FastAPI y Pydantic. En esta fase no existe conexión a PostgreSQL: los productos, categorías y colecciones se almacenan temporalmente en memoria y los datos se pierden al reiniciar el servidor.
 
 ## Requisitos
 
@@ -48,7 +48,9 @@ app/
 │   ├── router.py
 │   └── routes/
 │       ├── health.py
-│       └── productos.py
+│       ├── productos.py
+│       ├── categorias.py
+│       └── colecciones.py
 ├── core/
 │   ├── config.py
 │   └── errors.py
@@ -62,7 +64,9 @@ app/
 │   └── producto.py
 ├── models/
 ├── services/
-│   └── productos.py
+│   ├── productos.py
+│   ├── categorias.py
+│   └── colecciones.py
 └── repositories/
     ├── categorias.py
     ├── colecciones.py
@@ -71,97 +75,132 @@ tests/
 docs/api-contract.md
 ```
 
-## Endpoints de productos
+## Endpoints
 
-| Método | Ruta | Descripción |
-|---|---|---|
-| GET | `/api/productos` | Lista pública con filtros, paginación y ordenamiento |
-| GET | `/api/productos/{id}` | Detalle público de un producto activo |
-| POST | `/api/productos` | Crea un producto. Responde `201` y `Location` |
-| PUT | `/api/productos/{id}` | Reemplaza el producto completo |
-| DELETE | `/api/productos/{id}` | Borrado lógico. Responde `204` |
+```text
+GET    /api/health
 
-### Ejemplos
+GET    /api/productos
+GET    /api/productos/{id}
+POST   /api/productos
+PUT    /api/productos/{id}
+DELETE /api/productos/{id}
 
-Listar productos activos:
+GET    /api/categorias
+GET    /api/categorias/{id}
+POST   /api/categorias
+PUT    /api/categorias/{id}
+DELETE /api/categorias/{id}
 
-```powershell
-Invoke-RestMethod "http://127.0.0.1:8000/api/productos?pagina=1&por_pagina=5"
+GET    /api/colecciones
+GET    /api/colecciones/{id}
+POST   /api/colecciones
+PUT    /api/colecciones/{id}
+DELETE /api/colecciones/{id}
 ```
 
-Filtrar por categoría, disponibilidad y precio:
+### Categorías
+
+Listar categorías:
 
 ```powershell
-Invoke-RestMethod "http://127.0.0.1:8000/api/productos?categoria=tote-bags&disponible=true&orden=precio_asc"
+Invoke-RestMethod "http://127.0.0.1:8000/api/categorias?estado=activo&pagina=1&por_pagina=20"
 ```
 
-Filtrar por colección:
-
-```powershell
-Invoke-RestMethod "http://127.0.0.1:8000/api/productos?coleccion=la-coleccion"
-```
-
-Obtener detalle:
-
-```powershell
-Invoke-RestMethod "http://127.0.0.1:8000/api/productos/1"
-```
-
-Crear producto:
+Crear categoría:
 
 ```powershell
 Invoke-RestMethod -Method Post `
-  -Uri "http://127.0.0.1:8000/api/productos" `
+  -Uri "http://127.0.0.1:8000/api/categorias" `
   -ContentType "application/json" `
   -Body '{
-    "nombre": "Tote Bag Nueva",
-    "precio": "899.00",
-    "sku": "BAG-NEW-001",
-    "categoria_id": 2,
-    "existencias": 10
+    "nombre": "Bandoleras",
+    "descripcion": "Bolsas bandolera.",
+    "estado": "activo",
+    "orden": 4
   }'
 ```
 
-Reemplazar producto:
+Reemplazar categoría:
 
 ```powershell
 Invoke-RestMethod -Method Put `
-  -Uri "http://127.0.0.1:8000/api/productos/1" `
+  -Uri "http://127.0.0.1:8000/api/categorias/1" `
   -ContentType "application/json" `
   -Body '{
-    "nombre": "Tote Bag Aurora",
-    "precio": "950.00",
-    "categoria_id": 2,
-    "existencias": 0,
-    "imagenes": [],
-    "estado": "activo"
+    "nombre": "Cross Body Premium",
+    "descripcion": "Bolsas cross body premium.",
+    "estado": "activo",
+    "orden": 2
   }'
 ```
 
-Eliminar producto:
+### Colecciones
+
+Listar colecciones:
 
 ```powershell
-Invoke-WebRequest -Method Delete `
-  -Uri "http://127.0.0.1:8000/api/productos/1" `
-  -UseBasicParsing
+Invoke-RestMethod "http://127.0.0.1:8000/api/colecciones?estado=activo&pagina=1&por_pagina=20"
+```
+
+Crear colección:
+
+```powershell
+Invoke-RestMethod -Method Post `
+  -Uri "http://127.0.0.1:8000/api/colecciones" `
+  -ContentType "application/json" `
+  -Body '{
+    "nombre": "Verano",
+    "descripcion": "Selección de verano.",
+    "estado": "activo",
+    "producto_ids": [1, 3, 4]
+  }'
+```
+
+Reemplazar membresía de una colección:
+
+```powershell
+Invoke-RestMethod -Method Put `
+  -Uri "http://127.0.0.1:8000/api/colecciones/1" `
+  -ContentType "application/json" `
+  -Body '{
+    "nombre": "La Colección",
+    "estado": "activo",
+    "producto_ids": [1, 2, 5]
+  }'
+```
+
+Obtener productos de una colección:
+
+```powershell
+Invoke-RestMethod "http://127.0.0.1:8000/api/productos?coleccion=la-coleccion&pagina=1&por_pagina=20"
 ```
 
 ## Datos iniciales
-
-El repositorio en memoria incluye:
 
 - 10 productos distribuidos entre Tote Bags, Cross Body y Mini Bags.
 - Productos disponibles y agotados.
 - Productos activos e inactivos.
 - Productos con y sin imágenes.
-- Productos asociados a las colecciones `la-coleccion` y `archivo`.
-- 3 categorías y 2 colecciones de referencia.
+- 3 categorías: `tote-bags`, `cross-body` y `mini-bags`.
+- 2 colecciones: `la-coleccion` activa y `archivo` inactiva.
+
+## Relación producto-colección
+
+La única fuente canónica de la relación es `producto_ids` en `/api/colecciones`.
+
+- El producto expone `colecciones` como campo de solo lectura.
+- No existe `coleccion_ids` en las solicitudes de producto.
+- Los productos de una colección se consultan con `GET /api/productos?coleccion=...`.
+- El detalle de colección no incluye productos embebidos.
+- Eliminar una colección elimina únicamente sus asociaciones.
+- Eliminar un producto lo elimina de todas sus colecciones.
 
 ## Reglas actuales de acceso
 
-- `GET /api/productos` solo devuelve productos activos.
+- `GET` público solo devuelve productos, categorías y colecciones activas.
 - Los productos agotados siguen visibles si están activos, con `disponible=false`.
-- Los productos inactivos devuelven `404` en el detalle público.
+- Los recursos inactivos devuelven `404` en el detalle público.
 - `estado=inactivo` y `estado=todos` devuelven `403` sin autenticación.
 - Las escrituras están temporalmente abiertas mediante una dependencia no-op. La autenticación se implementará en una fase posterior.
 
@@ -170,12 +209,13 @@ El repositorio en memoria incluye:
 - Aplicación FastAPI con prefijo `/api`.
 - Health, Swagger, CORS configurable y errores normalizados.
 - Repositorios temporales de productos, categorías y colecciones.
-- Servicio de productos con validaciones de negocio.
-- CRUD temporal de productos.
+- Servicios con validaciones de negocio y conteos.
+- CRUD temporal de productos, categorías y colecciones.
 - Filtros, paginación y ordenamiento.
-- Borrado lógico con reserva de SKU y slug.
+- Borrado lógico de productos y borrado físico de categorías/colecciones.
+- Validación de dependencias y relaciones.
 
-No se implementan todavía PostgreSQL, SQLAlchemy, migraciones, autenticación, endpoints de categorías/colecciones, pagos, carrito ni compras.
+No se implementan todavía PostgreSQL, SQLAlchemy, migraciones, autenticación, pagos, carrito ni compras.
 
 ## Decisiones pendientes
 

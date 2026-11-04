@@ -1,4 +1,5 @@
 import unicodedata
+from collections.abc import Iterable
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -416,6 +417,64 @@ class ProductoRepositorioMemoria:
         return any(
             producto.slug == objetivo and producto.id != excluir_id
             for producto in self._productos.values()
+        )
+
+    def contar_por_categoria(
+        self,
+        categoria_id: int,
+        *,
+        solo_activos: bool = False,
+        incluir_eliminados: bool = False,
+    ) -> int:
+        total = 0
+        for producto in self._productos.values():
+            if producto.categoria_id != categoria_id:
+                continue
+            if not incluir_eliminados and producto.eliminado_en is not None:
+                continue
+            if solo_activos and producto.estado != Estado.ACTIVO:
+                continue
+            total += 1
+        return total
+
+    def existe_categoria_con_productos(
+        self,
+        categoria_id: int,
+        *,
+        incluir_eliminados: bool = True,
+    ) -> bool:
+        return any(
+            producto.categoria_id == categoria_id
+            and (incluir_eliminados or producto.eliminado_en is None)
+            for producto in self._productos.values()
+        )
+
+    def contar_por_ids(
+        self,
+        producto_ids: Iterable[int],
+        *,
+        solo_activos: bool = False,
+        incluir_eliminados: bool = False,
+    ) -> int:
+        total = 0
+        for producto_id in set(producto_ids):
+            producto = self._productos.get(producto_id)
+            if producto is None:
+                continue
+            if not incluir_eliminados and producto.eliminado_en is not None:
+                continue
+            if solo_activos and producto.estado != Estado.ACTIVO:
+                continue
+            total += 1
+        return total
+
+    def ids_inexistentes(self, producto_ids: Iterable[int]) -> list[int]:
+        return sorted(
+            {
+                producto_id
+                for producto_id in producto_ids
+                if self.obtener_por_id(producto_id) is None
+            }
         )
 
     def _ordenar(

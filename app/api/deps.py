@@ -5,6 +5,8 @@ from fastapi import Depends
 from app.repositories.categorias import CategoriaRepositorioMemoria
 from app.repositories.colecciones import ColeccionRepositorioMemoria
 from app.repositories.productos import ProductoRepositorioMemoria
+from app.services.categorias import CategoriaService
+from app.services.colecciones import ColeccionService
 from app.services.productos import ProductoService
 
 
@@ -31,6 +33,24 @@ def get_producto_service(
     ),
 ) -> ProductoService:
     return ProductoService(productos, categorias, colecciones)
+
+
+def get_categoria_service(
+    categorias: CategoriaRepositorioMemoria = Depends(
+        get_categoria_repositorio
+    ),
+    productos: ProductoRepositorioMemoria = Depends(get_producto_repositorio),
+) -> CategoriaService:
+    return CategoriaService(categorias, productos)
+
+
+def get_coleccion_service(
+    colecciones: ColeccionRepositorioMemoria = Depends(
+        get_coleccion_repositorio
+    ),
+    productos: ProductoRepositorioMemoria = Depends(get_producto_repositorio),
+) -> ColeccionService:
+    return ColeccionService(colecciones, productos)
 
 
 def requiere_administrador() -> None:
