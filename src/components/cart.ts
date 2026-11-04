@@ -4,7 +4,6 @@ import { products } from '../data/products';
 import { bagArt } from './bag';
 
 const STORAGE_KEY = 'bagstore.cart.v1';
-const DEMO_THRESHOLD = 1000;
 const money = (value: number) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 2 }).format(value);
 function element<T extends HTMLElement = HTMLElement>(selector: string): T {
   const node = document.querySelector<T>(selector);
@@ -41,7 +40,7 @@ export function createCart(notify: (message: string) => void, commerce: Commerce
       if (!products.some(p => p.id === id) || max === 0) { items.delete(id); changed = true; }
       else if (qty > max) { items.set(id, max); changed = true; }
     }
-    if (changed) { save(); notify('Actualizamos tu carrito según los productos y existencias de prueba disponibles.'); }
+    if (changed) { save(); notify('Actualizamos tu carrito según la disponibilidad de los productos.'); }
 
     const { subtotal, discount, total, count } = totals();
     element('#cart-count').textContent = String(count);
@@ -62,15 +61,13 @@ export function createCart(notify: (message: string) => void, commerce: Commerce
     element('#coupon-remove').hidden = !coupon;
     element<HTMLInputElement>('#coupon-code').disabled = coupon;
     element<HTMLButtonElement>('#coupon-apply').disabled = coupon;
-    element<HTMLProgressElement>('#shipping-progress').value = Math.min(total, DEMO_THRESHOLD);
-    element('#shipping-message').textContent = total >= DEMO_THRESHOLD ? '¡Alcanzaste la meta de envío de ejemplo!' : `Te faltan ${money(DEMO_THRESHOLD - total)} para la meta de envío de ejemplo.`;
-    element('#cart-storage-note').textContent = storageAvailable ? 'Tu selección se guarda en este navegador. Máximo de prueba: 10 unidades por modelo.' : 'No se pudo guardar en este navegador. Tu selección se conservará solo mientras esta página esté abierta.';
+    element('#cart-storage-note').textContent = storageAvailable ? 'Puedes añadir hasta 10 unidades por modelo, según disponibilidad.' : 'No se pudo guardar en este navegador. Tu selección se conservará solo mientras esta página esté abierta.';
     element('#review-items').innerHTML = [...items].map(([id, qty]) => {
       const product = products.find(p => p.id === id)!;
       return `<li><span>${escapeHtml(product.name)} <small>× ${qty}</small></span><strong>${money(product.price * qty)}</strong></li>`;
     }).join('');
     element('#review-total').textContent = money(total);
-    element('#review-gift').textContent = gift ? 'Sí, marcado para regalo (ejemplo)' : 'Sin empaque de regalo';
+    element('#review-gift').textContent = gift ? 'Compra marcada para regalo' : 'Sin selección de regalo';
     element('#review-discount').textContent = coupon ? `BEIGE10: −${money(discount)}` : 'Sin cupón';
   }
   function route() {
@@ -113,9 +110,9 @@ export function createCart(notify: (message: string) => void, commerce: Commerce
   element('#coupon-form').addEventListener('submit', event => {
     event.preventDefault();
     const input = element<HTMLInputElement>('#coupon-code');
-    if (!input.value.trim()) { couponMessage = 'Escribe un código para probarlo.'; }
-    else if (input.value.trim().toUpperCase() === 'BEIGE10') { coupon = true; couponMessage = 'BEIGE10 aplicado: 10% de descuento de ejemplo.'; }
-    else couponMessage = 'Código no válido en esta demostración. Prueba BEIGE10.';
+    if (!input.value.trim()) { couponMessage = 'Ingresa tu código de descuento.'; }
+    else if (input.value.trim().toUpperCase() === 'BEIGE10') { coupon = true; couponMessage = 'Cupón BEIGE10 aplicado: 10% de descuento.'; }
+    else couponMessage = 'No reconocemos este cupón. Revisa el código e inténtalo de nuevo.';
     render();
   });
   element('#coupon-remove').addEventListener('click', () => {
@@ -136,8 +133,8 @@ export function createCart(notify: (message: string) => void, commerce: Commerce
     add(id: number) {
     if (!products.some(p => p.id === id)) return;
     const qty = items.get(id) ?? 0;
-    if (commerce.quantity(id) <= qty) return notify('No hay más existencias de prueba de este producto.');
-    if (qty >= 10) return notify('Límite de demostración: 10 unidades por producto.');
-    items.set(id, qty + 1); save(); render(); notify('Agregaste una favorita a tu carrito.');
+    if (commerce.quantity(id) <= qty) return notify('Ya tienes la cantidad disponible de este producto en tu carrito.');
+    if (qty >= 10) return notify('Puedes añadir hasta 10 unidades por producto.');
+    items.set(id, qty + 1); save(); render(); notify('Producto añadido a tu carrito.');
   } };
 }

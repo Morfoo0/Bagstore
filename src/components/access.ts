@@ -11,12 +11,12 @@ function node<T extends HTMLElement = HTMLElement>(selector: string): T {
 
 const sections = {
   resumen: { title: 'Todo empieza con una buena base.', subtitle: 'Un vistazo al espacio de trabajo de Bagstore.' },
-  productos: { title: 'Tus productos.', subtitle: 'Crea, edita y organiza productos de prueba en este navegador.' },
+  productos: { title: 'Tus productos.', subtitle: 'Crea, edita y organiza los productos de tu catálogo.' },
   categorias: { title: 'Un lugar para cada estilo.', subtitle: 'Agrega y renombra tipos de bolsa para seleccionarlos en tus productos.' },
-  colecciones: { title: 'Colecciones con personalidad.', subtitle: 'Crea colecciones y asocia productos activos de la tienda de prueba.' },
-  existencias: { title: 'Cada bolsa cuenta.', subtitle: 'Consulta y ajusta existencias ficticias para probar el recorrido completo.' },
-  reportes: { title: 'Conoce tus resultados.', subtitle: 'Pedidos de demostración, filtros y exportación de resultados locales.' },
-  devoluciones: { title: 'Acompaña cada solicitud.', subtitle: 'Gestiona solicitudes locales sin reembolsos reales.' },
+  colecciones: { title: 'Colecciones con personalidad.', subtitle: 'Agrupa tus productos y presenta cada colección a tu manera.' },
+  existencias: { title: 'Cada bolsa cuenta.', subtitle: 'Consulta existencias y registra ajustes de inventario.' },
+  reportes: { title: 'Conoce tus resultados.', subtitle: 'Consulta tus pedidos, filtra por fechas y exporta los resultados.' },
+  devoluciones: { title: 'Acompaña cada solicitud.', subtitle: 'Revisa solicitudes y mantén actualizado su estado.' },
   conexion: { title: 'Conectemos las piezas.', subtitle: 'Cliente HTTP preparado; contratos y servidor pendientes del equipo.' }
 };
 type AdminSection = keyof typeof sections;
@@ -81,7 +81,7 @@ export function setupAccess(catalogs: CatalogRepository): void {
       const details = sections[section];
       node('#admin-title').textContent = details.title;
       node('#admin-subtitle').textContent = details.subtitle;
-      document.title = `Panel de demostración · ${section} — Bagstore`;
+      document.title = `Administración · ${section} — Bagstore`;
       document.querySelectorAll<HTMLElement>('[data-admin-section]').forEach(view => { view.hidden = view.dataset.adminSection !== section; });
       document.querySelectorAll<HTMLAnchorElement>('[data-admin-link]').forEach(link => {
         const active = link.dataset.adminLink === section;

@@ -106,7 +106,7 @@ export function setupProductManager(catalogs: CatalogRepository): void {
       if (catalogKind === 'color' && dialog.open) { get<HTMLSelectElement>('#product-label').value = option.id; dirty = true; preview(); }
       catalogDialog.close(); render(); publishProducts();
       if (catalogKind === 'category') document.querySelector<HTMLButtonElement>(`[data-category-edit="${option.id}"]`)?.focus();
-      get('#category-status').textContent = catalogKind === 'category' ? `Categoría ${option.name} guardada en la demostración.` : '';
+      get('#category-status').textContent = catalogKind === 'category' ? `Categoría ${option.name} guardada.` : '';
       window.dispatchEvent(new Event('bagstore-catalogs-changed'));
     } catch (error) {
       get('#catalog-error').textContent = error instanceof Error ? error.message : 'No pudimos guardar la opción.';
@@ -153,7 +153,7 @@ export function setupProductManager(catalogs: CatalogRepository): void {
     get('#product-photo-error').textContent = '';
     form.reset(); clearErrors();
     get('#product-editor-title').textContent = product ? 'Editar producto' : 'Una nueva favorita.';
-    get('#product-save').textContent = product ? 'Guardar cambios de prueba' : 'Crear producto de prueba';
+    get('#product-save').textContent = product ? 'Guardar cambios' : 'Crear producto';
     refreshSelectors();
     if (product) {
       for (const key of fields) if (key !== 'category' && key !== 'label') get<HTMLInputElement | HTMLSelectElement>(`#product-${key}`).value = String(product[key]);
@@ -168,8 +168,8 @@ export function setupProductManager(catalogs: CatalogRepository): void {
     const category = catalogs.categories().find(c => c.id === get<HTMLSelectElement>('#product-category').value)?.name;
     get('#product-art-preview').innerHTML = photo ? `<img src="${photo}" alt="Vista previa de la foto del producto"/>` : bagArt({ id: 0, category: category === 'Mini' || category === 'Crossbody' ? category : 'Tote', color, accent }, 'editor');
     get('#product-photo-thumb').innerHTML = photo ? `<img src="${photo}" alt="Foto seleccionada para el producto"/>` : '<span aria-hidden="true">＋</span>';
-    get('#product-photo-name').textContent = photoName ?? 'Sin foto: se utilizará la ilustración de ejemplo.';
-    get('#product-preview-description').textContent = photo ? 'Foto seleccionada. Guardada solo en este navegador.' : 'Ilustración de ejemplo. Puedes añadir una foto desde el formulario.';
+    get('#product-photo-name').textContent = photoName ?? 'Sin foto seleccionada. Se mostrará una ilustración.';
+    get('#product-preview-description').textContent = photo ? 'Foto del producto seleccionada.' : 'Añade una foto para mostrar mejor tu producto.';
     get('#product-photo-remove').hidden = !photo;
     get('#product-preview-name').textContent = get<HTMLInputElement>('#product-name').value.trim() || 'Tu próxima favorita';
     const selected = catalogs.colors().find(c => c.id === get<HTMLSelectElement>('#product-label').value);
@@ -201,7 +201,7 @@ export function setupProductManager(catalogs: CatalogRepository): void {
       opener = target;
       get('#product-confirm-title').textContent = product.active ? '¿Desactivar este producto?' : '¿Reactivar este producto?';
       get('#product-confirm-name').textContent = product.name;
-      get('#product-confirm-action').textContent = product.active ? 'Sí, desactivar de prueba' : 'Sí, reactivar de prueba';
+      get('#product-confirm-action').textContent = product.active ? 'Desactivar producto' : 'Reactivar producto';
       get('#product-confirm-error').hidden = true;
       confirmation.showModal(); get('#product-confirm-cancel').focus();
     }
@@ -255,7 +255,7 @@ export function setupProductManager(catalogs: CatalogRepository): void {
     try {
       const saved = repo.save(draft, editing);
       const updated = editing !== undefined;
-      dirty = false; dialog.close(); render(); publishProducts(); announce(`${saved.name}: ${updated ? 'cambios guardados' : 'producto creado'} en la demostración compartida con la tienda.`);
+      dirty = false; dialog.close(); render(); publishProducts(); announce(`${saved.name}: ${updated ? 'cambios guardados' : 'producto creado'} en el catálogo.`);
       (document.querySelector<HTMLButtonElement>(`[data-edit="${saved.id}"]`) ?? get('#product-new')).focus();
     } catch (error) {
       get('#product-form-error').textContent = error instanceof Error ? error.message : 'No pudimos guardar el producto.';
@@ -275,7 +275,7 @@ export function setupProductManager(catalogs: CatalogRepository): void {
     if (!product) return;
     try {
       repo.setActive(product.id, !product.active); confirmation.close(); render(); publishProducts();
-      announce(`${product.name}: ${product.active ? 'desactivado' : 'reactivado'} en la demostración. No se borraron sus datos.`);
+      announce(`${product.name}: ${product.active ? 'desactivado' : 'reactivado'}. Sus datos se conservaron.`);
       (document.querySelector<HTMLButtonElement>(`[data-active="${product.id}"]`) ?? get('#product-new')).focus();
     } catch { get('#product-confirm-error').hidden = false; }
   });

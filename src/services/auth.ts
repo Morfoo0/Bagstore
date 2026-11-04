@@ -6,7 +6,7 @@ export interface Credentials {
 
 export class AuthNotConfiguredError extends Error {
   constructor() {
-    super('El acceso todavía no está conectado al servidor. Puedes explorar la vista previa del panel sin iniciar sesión.');
+    super('El inicio de sesión aún no está disponible. Inténtalo más tarde o vuelve a explorar la tienda.');
     this.name = 'AuthNotConfiguredError';
   }
 }

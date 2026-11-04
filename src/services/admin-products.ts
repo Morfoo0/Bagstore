@@ -71,7 +71,7 @@ export function createProductRepository(seed: Product[], storage?: DemoStorage, 
     save(draft: ProductDraft, id?: number): AdminProduct {
       if (Object.keys(validateProduct(draft, allowedCategories())).length) throw new Error('Revisa los campos del producto.');
       const index = id === undefined ? -1 : items.findIndex(p => p.id === id);
-      if (id !== undefined && index === -1) throw new Error('El producto ya no está disponible en la demostración.');
+      if (id !== undefined && index === -1) throw new Error('Este producto ya no está disponible. Actualiza el catálogo e inténtalo de nuevo.');
       const product: AdminProduct = {
         id: id ?? Math.max(0, ...items.map(p => p.id)) + 1,
         active: index >= 0 ? items[index].active : true,

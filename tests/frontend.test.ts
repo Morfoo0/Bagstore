@@ -73,7 +73,7 @@ test('compra de prueba genera reporte y permite solicitar devolución', async ()
     p.$('#products [data-add="1"]').click(); await p.route('#checkout'); p.$('#demo-purchase').click(); await new Promise(resolve => setTimeout(resolve, 5));
     p.set('#delivery-postcode', '00000'); p.submit('#delivery-form'); await new Promise(resolve => setTimeout(resolve, 5));
     p.$('#purchase-form input[name="ack"]').checked = true; p.submit('#purchase-form'); await new Promise(resolve => setTimeout(resolve, 5));
-    assert.match(p.$('#extra-page h1').textContent, /pedido de demostración/);
+    assert.match(p.$('#extra-page h1').textContent, /pedido de vista previa/);
     const order = JSON.parse(p.w.localStorage.getItem('bagstore.commerce.v1')!).orders[0]; assert.equal(order.total, 599);
     await p.route('#admin/reportes'); assert.match(p.$('#report-body').textContent, new RegExp(order.id));
     await p.route('#devoluciones'); p.set('#return-order', order.id); p.$('#return-order').dispatchEvent(new p.w.Event('change', { bubbles: true })); p.set('#return-product', '1'); p.set('#return-reason', 'Otro motivo'); p.set('#return-comment', 'Solicitud escolar de prueba'); p.submit('#return-form');

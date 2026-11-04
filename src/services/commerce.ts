@@ -22,7 +22,7 @@ function validState(s: State) {
     && Array.isArray(s.changes) && s.changes.every(c => idOK(c.id) && integer(c.productId, 1) && integer(c.quantity) && textOK(c.reason, 3, 200) && dateOK(c.date));
 }
 export function createCommerceRepository(storage?: StoragePort) {
-  let state: State = { collections: [{ id: 'everyday', name: 'Everyday essentials', description: 'Una colección de ejemplo para acompañar todos tus días.', productIds: [1, 2, 3, 4], active: true }], reviews: [], orders: [], returns: [], stock: {}, changes: [] };
+  let state: State = { collections: [{ id: 'everyday', name: 'Everyday essentials', description: 'Tus esenciales para acompañarte todos los días.', productIds: [1, 2, 3, 4], active: true }], reviews: [], orders: [], returns: [], stock: {}, changes: [] };
   let warning = '';
   let seq = 0;
   const id = (prefix: string) => `${prefix}-${Date.now()}-${++seq}`;
@@ -53,8 +53,8 @@ export function createCommerceRepository(storage?: StoragePort) {
     },
     createOrder(lines: { id: number; qty: number }[], products: Product[], coupon: boolean, shipping: number, delivery: string, payment: string) {
       if (!lines.length || new Set(lines.map(l => l.id)).size !== lines.length || ![0, 79].includes(shipping) || !['Recoger en tienda (demo)', 'Envío a domicilio (demo)'].includes(delivery) || !['Tarjeta de prueba', 'Transferencia de prueba'].includes(payment)) throw Error('Revisa los productos y las opciones de entrega y pago.');
-      if ((delivery === 'Recoger en tienda (demo)' && shipping !== 0) || (delivery === 'Envío a domicilio (demo)' && shipping !== 79)) throw Error('La tarifa de prueba no corresponde a la entrega seleccionada.');
-      const items = lines.map(line => { const p = products.find(p => p.id === line.id); if (!p || !Number.isFinite(p.price) || p.price <= 0 || !integer(line.qty, 1, 10) || line.qty > quantity(line.id)) throw Error('Un producto ya no está disponible o supera las existencias de prueba. Revisa el carrito.'); return { productId: p.id, name: p.name, price: p.price, qty: line.qty }; });
+      if ((delivery === 'Recoger en tienda (demo)' && shipping !== 0) || (delivery === 'Envío a domicilio (demo)' && shipping !== 79)) throw Error('La tarifa no corresponde a la entrega seleccionada. Revisa tus opciones.');
+      const items = lines.map(line => { const p = products.find(p => p.id === line.id); if (!p || !Number.isFinite(p.price) || p.price <= 0 || !integer(line.qty, 1, 10) || line.qty > quantity(line.id)) throw Error('La cantidad seleccionada supera la disponibilidad de un producto. Revisa tu carrito.'); return { productId: p.id, name: p.name, price: p.price, qty: line.qty }; });
       const subtotal = round(items.reduce((n, p) => n + p.price * p.qty, 0)); const discount = coupon ? round(subtotal * .1) : 0;
       const order: DemoOrder = { id: id('demo'), date: new Date().toISOString(), items, subtotal, discount, shipping, total: round(subtotal - discount + shipping), delivery, payment };
       for (const p of items) state.stock[String(p.productId)] = quantity(p.productId) - p.qty;

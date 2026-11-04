@@ -8,7 +8,9 @@
 - Cada integrante trabaja en su propia base y rama. Nuestra rama: frontend-bafar. No crear main para continuar.
 - No ejecutar push ni publicar PR hasta nueva instrucción expresa del usuario. Se permiten commits locales.
 
-## Estado vigente — entrega 6
+## Estado vigente — entrega 7
+
+Textos de tienda y panel revisados: consultar docs/avance-07-textos-tienda.md. Se retiró la meta ficticia de envío, se aclararon totales y acciones del carrito, y se mantuvieron avisos de vista previa/sin cobros. 35 pruebas y compilación correctas. La integración real continúa pendiente.
 
 Consultar docs/avance-06-recorridos-frontend.md y docs/contrato-api-propuesto.md.
 
