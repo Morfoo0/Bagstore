@@ -1,6 +1,7 @@
 import { products } from '../data/products';
 import { requestedTestProduct, testProductRequestKey } from '../data/admin-test-product';
 import { bagArt } from './bag';
+import { prepareProductPhoto } from '../services/product-photo';
 import { createProductRepository, validateProduct } from '../services/admin-products';
 import type { ProductDraft } from '../services/admin-products';
 
@@ -35,6 +36,16 @@ export function setupProductManager(): void {
   let changing: number | undefined;
   let opener: HTMLElement | null = null;
   let dirty = false;
+  let photo: string | undefined;
+  let photoName: string | undefined;
+  let photoVersion = 0;
+  let photoBusy = false;
+
+  function setPhotoBusy(busy: boolean) {
+    photoBusy = busy;
+    get<HTMLButtonElement>('#product-save').disabled = busy;
+    get('#product-photo-status').textContent = busy ? 'Preparando foto…' : '';
+  }
 
   function announce(message: string) { get('#product-status').textContent = message; }
   function render() {
@@ -44,7 +55,7 @@ export function setupProductManager(): void {
     const visible = all.filter(p => `${p.name} ${p.label} BS-${String(p.id).padStart(3, '0')}`.toLocaleLowerCase('es').includes(query) && (state === 'all' || p.active === (state === 'active')));
     get('#admin-product-count').textContent = String(all.length);
     get('#product-result-count').textContent = `${visible.length} de ${all.length} productos · ${all.filter(p => p.active).length} activos`;
-    get('#admin-product-rows').innerHTML = visible.map(p => `<tr><td><div class="admin-product-name"><span>${bagArt(p, 'managed')}</span><div><strong>${safe(p.name)}</strong><small>BS-${String(p.id).padStart(3, '0')}</small></div></div></td><td>${p.category}</td><td>${safe(p.label)}</td><td>${new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(p.price)}</td><td><span class="admin-tag ${p.active ? '' : 'muted'}">${p.active ? 'Activo' : 'Inactivo'}</span></td><td><div class="product-row-actions"><button data-edit="${p.id}" aria-label="Editar ${safe(p.name)}">Editar</button><button data-active="${p.id}" aria-label="${p.active ? 'Desactivar' : 'Reactivar'} ${safe(p.name)}">${p.active ? 'Desactivar' : 'Reactivar'}</button></div></td></tr>`).join('');
+    get('#admin-product-rows').innerHTML = visible.map(p => `<tr><td><div class="admin-product-name"><span>${p.imageData ? `<img class="product-table-photo" src="${p.imageData}" alt="Foto de ${safe(p.name)}"/>` : bagArt(p, 'managed')}</span><div><strong>${safe(p.name)}</strong><small>BS-${String(p.id).padStart(3, '0')}</small></div></div></td><td>${p.category}</td><td>${safe(p.label)}</td><td>${new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(p.price)}</td><td><span class="admin-tag ${p.active ? '' : 'muted'}">${p.active ? 'Activo' : 'Inactivo'}</span></td><td><div class="product-row-actions"><button data-edit="${p.id}" aria-label="Editar ${safe(p.name)}">Editar</button><button data-active="${p.id}" aria-label="${p.active ? 'Desactivar' : 'Reactivar'} ${safe(p.name)}">${p.active ? 'Desactivar' : 'Reactivar'}</button></div></td></tr>`).join('');
     get('#product-list-empty').hidden = visible.length > 0;
     get('#product-storage-warning').textContent = repo.warning();
     get('#product-storage-warning').hidden = !repo.warning();
@@ -61,6 +72,10 @@ export function setupProductManager(): void {
     if (id !== undefined && !product) return;
     opener = document.activeElement as HTMLElement;
     editing = id; dirty = false;
+    photoVersion++;
+    photo = product?.imageData; photoName = product?.imageName;
+    setPhotoBusy(false);
+    get('#product-photo-error').textContent = '';
     form.reset(); clearErrors();
     get('#product-editor-title').textContent = product ? 'Editar producto' : 'Una nueva favorita.';
     get('#product-save').textContent = product ? 'Guardar cambios de prueba' : 'Crear producto de prueba';
@@ -71,7 +86,11 @@ export function setupProductManager(): void {
     const color = get<HTMLInputElement>('#product-color').value;
     const accent = get<HTMLInputElement>('#product-accent').value;
     const category = get<HTMLSelectElement>('#product-category').value;
-    get('#product-art-preview').innerHTML = bagArt({ id: 0, category: category === 'Mini' || category === 'Crossbody' ? category : 'Tote', color, accent }, 'editor');
+    get('#product-art-preview').innerHTML = photo ? `<img src="${photo}" alt="Vista previa de la foto del producto"/>` : bagArt({ id: 0, category: category === 'Mini' || category === 'Crossbody' ? category : 'Tote', color, accent }, 'editor');
+    get('#product-photo-thumb').innerHTML = photo ? `<img src="${photo}" alt="Foto seleccionada para el producto"/>` : '<span aria-hidden="true">＋</span>';
+    get('#product-photo-name').textContent = photoName ?? 'Sin foto: se utilizará la ilustración de ejemplo.';
+    get('#product-preview-description').textContent = photo ? 'Foto seleccionada. Guardada solo en este navegador.' : 'Ilustración de ejemplo. Puedes añadir una foto desde el formulario.';
+    get('#product-photo-remove').hidden = !photo;
     get('#product-preview-name').textContent = get<HTMLInputElement>('#product-name').value.trim() || 'Tu próxima favorita';
   }
   function requestClose() {
@@ -103,10 +122,39 @@ export function setupProductManager(): void {
     }
   });
   form.addEventListener('input', () => { dirty = true; preview(); });
+  get('#product-photo').addEventListener('change', async () => {
+    const input = get<HTMLInputElement>('#product-photo');
+    const file = input.files?.[0];
+    if (!file) return;
+    const version = ++photoVersion;
+    dirty = true; setPhotoBusy(true);
+    get('#product-photo-error').textContent = '';
+    try {
+      const prepared = await prepareProductPhoto(file);
+      if (version !== photoVersion || !dialog.open) return;
+      photo = prepared.data; photoName = prepared.name; preview();
+    } catch (error) {
+      if (version !== photoVersion) return;
+      get('#product-photo-error').textContent = `${error instanceof Error ? error.message : 'No pudimos cargar la foto.'} La selección anterior se conserva.`;
+    } finally {
+      if (version === photoVersion) { input.value = ''; setPhotoBusy(false); }
+    }
+  });
+  get('#product-photo-remove').addEventListener('click', () => {
+    photoVersion++; setPhotoBusy(false); photo = undefined; photoName = undefined; dirty = true;
+    get<HTMLInputElement>('#product-photo').value = '';
+    get('#product-photo-error').textContent = ''; preview(); get('#product-photo').focus();
+  });
   form.addEventListener('submit', event => {
     event.preventDefault(); clearErrors();
+    if (photoBusy) return;
     const draft = Object.fromEntries(fields.map(key => [key, get<HTMLInputElement | HTMLSelectElement>(`#product-${key}`).value])) as unknown as ProductDraft;
+    draft.imageData = photo; draft.imageName = photoName;
     const errors = validateProduct(draft);
+    if (errors.imageData || errors.imageName) {
+      get('#product-photo-error').textContent = errors.imageData ?? errors.imageName!;
+      get('#product-photo').focus(); return;
+    }
     const invalid = fields.filter(key => errors[key]);
     if (invalid.length) {
       for (const key of invalid) { get(`#product-${key}`).setAttribute('aria-invalid', 'true'); get(`#product-${key}-error`).textContent = errors[key]!; }
@@ -125,7 +173,7 @@ export function setupProductManager(): void {
     }
   });
   dialog.addEventListener('cancel', event => { event.preventDefault(); requestClose(); });
-  dialog.addEventListener('close', () => { get('#product-discard').hidden = true; if (opener?.isConnected) opener.focus(); });
+  dialog.addEventListener('close', () => { photoVersion++; setPhotoBusy(false); get('#product-discard').hidden = true; if (opener?.isConnected) opener.focus(); });
   get('#product-editor-close').addEventListener('click', requestClose);
   get('#product-editor-cancel').addEventListener('click', requestClose);
   get('#product-discard-stay').addEventListener('click', () => { get('#product-discard').hidden = true; get('#product-name').focus(); });

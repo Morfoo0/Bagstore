@@ -40,3 +40,6 @@ Campos definitivos, categorías configurables, fotografías, permisos reales, AP
 
 ## Producto de prueba solicitado
 Se agregó Tote Aurora — prueba, categoría Tote, color Beige clásico, precio de ejemplo 529.00 MXN y estado activo. Al cargar la aplicación se incorpora una sola vez al repositorio local del panel mediante una marca de solicitud; no modifica el catálogo público. Compilación y siete pruebas correctas. No se confirmó visualmente su aparición en el navegador del usuario.
+
+## Foto del producto
+El formulario ahora permite elegir, cambiar y quitar una foto opcional JPG/PNG/WebP de hasta 5 MB. Se decodifica en el navegador y se prepara una versión JPEG de hasta 700 px, limitada para el almacenamiento local. Hay miniatura junto al selector (también en móvil), vista previa de escritorio y foto en la tabla. La selección anterior se conserva si un archivo es rechazado; el guardado se bloquea mientras se prepara la imagen y se cancelan resultados asíncronos al cerrar el formulario. No se suben fotos a ningún servidor. Compilación correcta y nueve pruebas aprobadas, incluyendo persistencia/retirada de foto y rechazo de formatos o URLs no admitidos. Pendiente probar el selector y la decodificación de archivos reales en navegador.

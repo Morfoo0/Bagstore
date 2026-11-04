@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createProductRepository, validateProduct, ADMIN_STORAGE_KEY } from '../src/services/admin-products.ts';
+import { createProductRepository, validateProduct, validProductPhoto, ADMIN_STORAGE_KEY } from '../src/services/admin-products.ts';
 
 const seed = [{ id: 1, name: 'Tote ejemplo', category: 'Tote' as const, label: 'Arena', color: '#CDB89E', accent: '#948067', price: 599 }];
 const draft = { name: '  Tote Aurora  ', category: 'Tote', label: '  Lino  ', color: '#CDB89E', accent: '#948067', price: '649.90' };
@@ -68,4 +68,23 @@ test('la lista y los resultados no permiten mutar el repositorio por referencia'
   assert.equal(repo.list()[0].name, seed[0].name);
   const saved = repo.save(draft); saved.name = 'Otro';
   assert.equal(repo.list()[1].name, 'Tote Aurora');
+});
+
+const pixel = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aPmUAAAAASUVORK5CYII=';
+test('la foto persiste, se recupera y se puede retirar al editar', () => {
+  const storage = memoryStorage();
+  const repo = createProductRepository(seed, storage);
+  const created = repo.save({ ...draft, imageData: pixel, imageName: 'foto.png' });
+  const recovered = createProductRepository(seed, storage);
+  assert.equal(recovered.list()[1].imageData, pixel);
+  assert.equal(recovered.list()[1].imageName, 'foto.png');
+  recovered.save({ ...draft, name: 'Aurora sin foto' }, created.id);
+  assert.equal(recovered.list()[1].imageData, undefined);
+});
+test('rechaza URLs externas, SVG y fotos demasiado grandes', () => {
+  for (const imageData of ['https://example.com/foto.jpg', 'data:image/svg+xml;base64,PHN2Zz4=', 'data:text/html;base64,SG9sYQ==', 'data:image/jpeg;base64,' + 'A'.repeat(600001)]) {
+    assert.equal(validProductPhoto(imageData), false);
+    assert.ok(validateProduct({ ...draft, imageData }).imageData);
+  }
+  assert.equal(validProductPhoto(pixel), true);
 });

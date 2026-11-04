@@ -1,15 +1,20 @@
 import type { Product } from '../types/product';
 
-export interface AdminProduct extends Product { active: boolean; }
-export interface ProductDraft { name: string; category: string; label: string; color: string; accent: string; price: string; }
+export interface AdminProduct extends Product { active: boolean; imageData?: string; imageName?: string; }
+export interface ProductDraft { name: string; category: string; label: string; color: string; accent: string; price: string; imageData?: string; imageName?: string; }
 export type DraftErrors = Partial<Record<keyof ProductDraft, string>>;
 export interface DemoStorage { getItem(key: string): string | null; setItem(key: string, value: string): void; }
 export const ADMIN_STORAGE_KEY = 'bagstore.admin-products.v1';
 const categories = ['Tote', 'Crossbody', 'Mini'];
 const hex = /^#[0-9a-f]{6}$/i;
+export function validProductPhoto(value: unknown): value is string {
+  return typeof value === 'string' && value.length <= 600000 && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(value);
+}
 
 export function validateProduct(draft: ProductDraft): DraftErrors {
   const errors: DraftErrors = {};
+  if (draft.imageData !== undefined && !validProductPhoto(draft.imageData)) errors.imageData = 'La foto no es válida o excede el tamaño de guardado.';
+  if (draft.imageName !== undefined && (typeof draft.imageName !== 'string' || draft.imageName.length > 120)) errors.imageName = 'El nombre de la imagen es demasiado largo.';
   if (draft.name.trim().length < 3 || draft.name.trim().length > 80) errors.name = 'Escribe un nombre de 3 a 80 caracteres.';
   if (!categories.includes(draft.category)) errors.category = 'Selecciona una categoría de la lista.';
   if (draft.label.trim().length < 2 || draft.label.trim().length > 40) errors.label = 'Escribe un nombre de color de 2 a 40 caracteres.';
@@ -25,7 +30,7 @@ function validSavedProduct(value: unknown): value is AdminProduct {
   const p = value as Record<string, unknown>;
   if (!Number.isSafeInteger(p.id) || Number(p.id) <= 0 || typeof p.active !== 'boolean' || typeof p.price !== 'number') return false;
   for (const key of ['name', 'category', 'label', 'color', 'accent']) if (typeof p[key] !== 'string') return false;
-  return Object.keys(validateProduct({ name: p.name as string, category: p.category as string, label: p.label as string, color: p.color as string, accent: p.accent as string, price: String(p.price) })).length === 0;
+  return Object.keys(validateProduct({ name: p.name as string, category: p.category as string, label: p.label as string, color: p.color as string, accent: p.accent as string, price: String(p.price), imageData: p.imageData as string | undefined, imageName: p.imageName as string | undefined })).length === 0;
 }
 
 /** Repositorio exclusivo de la demostración administrativa. No representa una API. */
@@ -59,7 +64,8 @@ export function createProductRepository(seed: Product[], storage?: DemoStorage) 
         id: id ?? Math.max(0, ...items.map(p => p.id)) + 1,
         active: index >= 0 ? items[index].active : true,
         name: draft.name.trim(), category: draft.category as Product['category'], label: draft.label.trim(),
-        color: draft.color, accent: draft.accent, price: Number(draft.price)
+        color: draft.color, accent: draft.accent, price: Number(draft.price),
+        ...(draft.imageData ? { imageData: draft.imageData, imageName: draft.imageName ?? 'Foto del producto' } : {})
       };
       if (index >= 0) items[index] = product; else items.push(product);
       persist(); return { ...product };
