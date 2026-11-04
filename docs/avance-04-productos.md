@@ -37,3 +37,6 @@ tests/admin-products.test.ts: pruebas del repositorio y reglas de validación.
 Revisar Nuevo producto, validación, guardar, editar, cancelar con cambios, desactivar, reactivar y recargar; comprobar móvil y teclado. Después implementar gestión de categorías y colecciones.
 
 Campos definitivos, categorías configurables, fotografías, permisos reales, API y diferencia entre eliminación y desactivación siguen por acordar con el equipo. No se añadió eliminación definitiva.
+
+## Producto de prueba solicitado
+Se agregó Tote Aurora — prueba, categoría Tote, color Beige clásico, precio de ejemplo 529.00 MXN y estado activo. Al cargar la aplicación se incorpora una sola vez al repositorio local del panel mediante una marca de solicitud; no modifica el catálogo público. Compilación y siete pruebas correctas. No se confirmó visualmente su aparición en el navegador del usuario.

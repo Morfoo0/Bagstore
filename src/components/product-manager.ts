@@ -1,4 +1,5 @@
 import { products } from '../data/products';
+import { requestedTestProduct, testProductRequestKey } from '../data/admin-test-product';
 import { bagArt } from './bag';
 import { createProductRepository, validateProduct } from '../services/admin-products';
 import type { ProductDraft } from '../services/admin-products';
@@ -17,6 +18,16 @@ export function setupProductManager(): void {
   let storage: Storage | undefined;
   try { storage = localStorage; } catch { /* El repositorio informará si no puede persistir. */ }
   const repo = createProductRepository(products, storage);
+  // Aplicar una vez la solicitud de prueba al abrir/recargar el panel.
+  // La marca evita recrearlo si después el usuario cambia su nombre o estado.
+  try {
+    if (!storage?.getItem(testProductRequestKey)) {
+      if (!repo.list().some(p => p.name === requestedTestProduct.name)) repo.save(requestedTestProduct);
+      storage?.setItem(testProductRequestKey, 'created');
+    }
+  } catch {
+    // Si el navegador bloquea la persistencia, el repositorio conserva el aviso.
+  }
   const dialog = get<HTMLDialogElement>('#product-editor');
   const confirmation = get<HTMLDialogElement>('#product-confirm');
   const form = get<HTMLFormElement>('#product-editor-form');
