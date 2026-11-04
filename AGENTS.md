@@ -11,6 +11,7 @@ El usuario autorizó comenzar el desarrollo. La primera entrega es la base visua
 - Backend: Python, desarrollado por otro integrante. Base de datos: PostgreSQL.
 - El navegador consume la API REST con fetch; no conecta directamente a PostgreSQL.
 - Separar componentes visuales, tipos, servicios de API y datos de ejemplo. Identificar claramente las simulaciones.
+- Colores y categorías usan catálogos compartidos con IDs estables (src/services/catalogs.ts). Evitar nombres libres y duplicados por mayúsculas, espacios o acentos. Los tonos de ilustración no sustituyen el color para filtros. Se agregan colores desde el formulario del producto y categorías desde su sección del panel.
 - Acordar endpoints, estructuras JSON, errores, autenticación y CORS con el equipo; las propuestas no son contratos confirmados.
 - Los cálculos definitivos de precios, permisos, autenticación y stock corresponden al backend.
 

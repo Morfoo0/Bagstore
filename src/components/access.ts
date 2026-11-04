@@ -1,3 +1,4 @@
+import type { CatalogRepository } from '../services/catalogs';
 import { products } from '../data/products';
 import { setupProductManager } from './product-manager';
 import { AuthNotConfiguredError, signIn } from '../services/auth';
@@ -11,14 +12,14 @@ function node<T extends HTMLElement = HTMLElement>(selector: string): T {
 const sections = {
   resumen: { title: 'Todo empieza con una buena base.', subtitle: 'Un vistazo al espacio de trabajo de Bagstore.' },
   productos: { title: 'Tus productos.', subtitle: 'Crea, edita y organiza productos de prueba en este navegador.' },
-  categorias: { title: 'Un lugar para cada estilo.', subtitle: 'Categorías de ejemplo utilizadas en el catálogo público.' },
+  categorias: { title: 'Un lugar para cada estilo.', subtitle: 'Agrega y renombra tipos de bolsa para seleccionarlos en tus productos.' },
   colecciones: { title: 'Colecciones con personalidad.', subtitle: 'Aquí se organizarán las colecciones y sus productos.' },
   existencias: { title: 'Cada bolsa cuenta.', subtitle: 'Aquí se consultarán y ajustarán las existencias autorizadas por el servidor.' },
   reportes: { title: 'Conoce tus resultados.', subtitle: 'Aquí se presentarán los reportes de ventas.' }
 };
 type AdminSection = keyof typeof sections;
 
-export function setupAccess(): void {
+export function setupAccess(catalogs: CatalogRepository): void {
   const form = node<HTMLFormElement>('#access-form');
   const password = node<HTMLInputElement>('#access-password');
   const feedback = node('#access-feedback');
@@ -55,10 +56,6 @@ export function setupAccess(): void {
     }
   });
   node('#account').addEventListener('click', () => { location.hash = 'acceso'; });
-  const categories = [...new Set(products.map(product => product.category))];
-  node('#admin-product-count').textContent = String(products.length);
-  node('#admin-category-count').textContent = String(categories.length);
-  node('#admin-categories').innerHTML = categories.map(category => `<article class="admin-category"><span aria-hidden="true">◇</span><h3>${category}</h3><p>${products.filter(p => p.category === category).length} productos de ejemplo</p></article>`).join('');
 
   function route(): void {
     const isAccess = location.hash === '#acceso';
@@ -93,7 +90,7 @@ export function setupAccess(): void {
     }
     window.scrollTo({ top: 0, behavior: 'instant' });
   }
-  setupProductManager();
+  setupProductManager(catalogs);
   window.addEventListener('hashchange', route);
   route();
 }

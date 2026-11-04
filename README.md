@@ -49,3 +49,9 @@ Consultar docs/avance-01.md para el mapa de archivos, comprobaciones y pendiente
 Mi cuenta abre #acceso. El formulario valida los campos pero informa que falta conectar la autenticación; no se envían ni guardan las credenciales. Para revisar la interfaz sin cuenta, usar Explorar panel de demostración.
 
 El panel #admin permite navegar por las secciones y consultar productos/categorías ficticios. En #admin/productos se pueden crear, editar, desactivar y reactivar productos con guardado local exclusivo de esta demostración. Estos cambios no modifican todavía el catálogo público ni el carrito. No hay permisos reales ni operaciones administrativas conectadas a Python. Ver docs/avance-04-productos.md. Las pruebas de validación/repositorio se ejecutan con npm test (Node 24 usado en desarrollo).
+
+## Colores y categorías
+
+El color se elige de un catálogo con muestra de tono. Desde el formulario se puede agregar un color; se rechazan duplicados por mayúsculas, acentos y espacios. Categorías permite agregar tipos de bolsa y renombrarlos conservando su ID. Estas opciones aparecen en selectores y filtros públicos/administrativos. Los tonos del dibujo son decorativos y se configuran aparte del color para filtrar. Ver docs/avance-05-catalogos.md.
+
+Las subidas a GitHub están pausadas por instrucción del usuario; los commits se conservan localmente.

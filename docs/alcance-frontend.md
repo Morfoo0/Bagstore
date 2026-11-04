@@ -39,7 +39,13 @@ Propuesta de pantallas derivada de las operaciones confirmadas:
 - Existencias: consulta y formulario para el ajuste que autorice el backend.
 - Reportes de ventas ya contemplados en la asignación original.
 
-Estado: estructura del panel, navegación y consulta de productos/categorías de ejemplo implementadas. Pantalla de acceso implementada sin autenticación real. Alta, edición, eliminación/desactivación, gestión de categorías/colecciones/existencias y reportes siguen pendientes. Los campos de formularios, reglas y acciones exactas se acordarán con el equipo. No asumir que eliminar y desactivar significan lo mismo; confirmar cuál operación admite la API y sus restricciones.
+Estado: estructura del panel, acceso visual, alta/edición de productos con foto, desactivar/reactivar y filtros implementados como demostración local. Categorías permite alta y renombrado; el producto selecciona colores compartidos y permite agregarlos desde el formulario, sin duplicados por mayúsculas/espacios/acentos. IDs estables conservan relaciones. Colecciones, existencias, reportes, eliminación definitiva y autenticación/permisos reales siguen pendientes. Los campos y contratos definitivos se acordarán con el equipo. No asumir que eliminar y desactivar significan lo mismo.
+
+## Acuerdo de colores y categorías
+
+Color: identificador estable, nombre normalizado para detectar duplicados y tono hexadecimal de muestra. Categoría: identificador estable y nombre. El producto guarda categoryId/colorId; los tonos del dibujo son campos decorativos aparte. Propuesta para el contrato Python: categoria_id y color_id como referencias, con nombres obtenidos de sus catálogos. Estos nombres de campos son una propuesta, no endpoints acordados.
+
+La tienda pública incorpora filtros con las mismas opciones de categorías/colores. Los productos del panel siguen siendo datos de prueba independientes de los cuatro productos públicos hasta integrar una fuente común. Opciones nuevas sin productos públicos muestran un resultado vacío.
 
 ## Reparto con backend
 

@@ -1,48 +1,42 @@
 # Punto de continuidad — Bagstore
 
-## Estado al cerrar esta sesión
+## Preferencias vigentes
 
-Todo el trabajo está guardado en esta carpeta independiente y en la rama local frontend-bafar del repositorio https://github.com/Morfoo0/Bagstore. Cada integrante trabaja en su propia base; la integración será al final. No crear main para continuar.
+- Proyecto escolar independiente de tienda de bolsas. No mezclar con FitTrack.
+- HTML, CSS y TypeScript con Vite; Python/PostgreSQL a cargo del equipo.
+- Nombre provisional Bagstore y paleta Beige clásico.
+- Cada integrante trabaja en su propia base y rama. Nuestra rama: frontend-bafar. No crear main para continuar.
+- No ejecutar push ni publicar PR hasta nueva instrucción expresa del usuario. Se permiten commits locales.
 
-Nombre comercial provisional: Bagstore. Paleta aprobada: Beige clásico (docs/diseno.md). Frontend HTML, CSS y TypeScript con Vite; backend Python/PostgreSQL a cargo del equipo.
+## Estado actual
 
-## Avances
+- Inicio, encabezado, pie, menú móvil, navegación y ayuda iniciales.
+- Catálogo público de cuatro bolsas de ejemplo, búsqueda y filtros de tipo/color.
+- Carrito en página propia, cantidades, eliminación, cupón de prueba, regalo y revisión; sin pedidos ni pagos reales.
+- Acceso visual validado; no envía ni guarda credenciales ni concede sesión real.
+- Panel: productos con alta/edición, foto opcional, desactivar/reactivar, búsqueda/filtros y persistencia local.
+- Colores compartidos con IDs, básicos iniciales, muestra y alta desde el formulario, evitando duplicados.
+- Categorías configurables con alta/renombrado e IDs estables. Opciones compartidas en selectores/filtros.
+- Catálogos y productos anteriores conservados mediante vinculación a IDs. Caramelo/Cacao se agrupan en Café; Arena/Lino/Beige clásico en Beige.
 
-1. Agente configurado en AGENTS.md y documentación exclusiva del proyecto en Notion.
-2. Inicio, encabezado, pie, navegación, menú móvil, ayuda y catálogo de cuatro bolsas ficticias con búsqueda y filtros.
-3. Página de carrito inspirada en TodoModa: cantidades, eliminación, resumen, cupón de prueba BEIGE10, regalo y revisión de compra. Solo los productos/cantidades persisten en este navegador; no hay pedidos ni pagos reales.
-4. Pantalla de acceso con validación y mostrar/ocultar contraseña. No concede sesión, no envía ni guarda credenciales y limpia la contraseña al enviar o salir.
-5. Panel administrativo de demostración, navegación y consulta de productos/categorías ficticios. Colecciones, existencias y reportes presentan sus pendientes.
-6. Matriz público/administrador documentada en docs/alcance-frontend.md.
+Los productos del panel y los cuatro productos públicos todavía son conjuntos de demostración independientes. Los catálogos de colores/categorías sí se comparten en este navegador. No afirmar que el panel modifica una base de datos ni que existe autenticación real.
 
-Último commit de implementación: d7ad0e6. La compilación npm run build pasó. Se comprobaron flujos de acceso, navegación, carrito y vistas a 390/1440 px; no se observaron errores de consola en los flujos revisados. No hay pruebas de integración real con backend.
+## Validación más reciente
 
-## Siguiente paso acordado
+npm run build correcto y 17 pruebas aprobadas. IDs/referencias HTML comprobados. Servidor local respondió HTTP 200. Falta revisión visual/interactiva de las últimas entregas: el único destino de control de aplicaciones disponible fue Codex, cuya interfaz no se automatiza.
 
-Actualización posterior: se implementaron formularios de creación/edición, desactivar/reactivar y filtros con guardado local exclusivo del panel. Ver docs/avance-04-productos.md. Compilación y siete pruebas correctas; falta revisión interactiva/visual de esta entrega antes de continuar con categorías y colecciones. La siguiente descripción conserva el plan anterior como contexto.
+## Qué sigue
 
-Crear y editar productos en el panel: formularios, validaciones visuales y confirmación de desactivación, inicialmente con datos de ejemplo. Acordar con el equipo los campos, operaciones y la diferencia entre eliminar y desactivar antes de definir contratos definitivos.
+1. Revisar en navegador colores, alta integrada, categorías nuevas/renombradas, productos anteriores, filtros, foto y modales anidados; verificar teclado y móvil.
+2. Gestión de colecciones y existencias, después reportes de ventas.
+3. Detalle de producto, reseñas, compartir y devoluciones; aclarar definición académica de portafolios.
+4. Acordar contratos de Python: categorías/colores/productos, roles/sesión, errores, stock, cupones/envíos, pedidos y pagos. Integrar fetch y comprobar permisos reales.
 
-Después: categorías, colecciones, existencias y reportes; completar detalle de producto, reseñas, compartir, devoluciones y portafolios (definición académica pendiente); integrar fetch, sesiones y permisos reales.
+## Retomar
 
-## Retomar en VS Code
+Abrir la raíz tienda-bolsas-escolar en VS Code. Ejecutar npm run dev si la vista está detenida, npm test para pruebas y npm run build para compilar.
+Rutas: #acceso, #admin, #admin/productos, #admin/categorias, #carrito y #checkout.
 
-Abrir la raíz tienda-bolsas-escolar. Si la vista local no está disponible, ejecutar:
+Leer AGENTS.md y docs/avance-05-catalogos.md. Notion: https://www.notion.so/40d1a2cc445d814db5d1e32c432b6095
 
-```bash
-npm run dev
-```
-
-Usar la dirección que imprima Vite. Rutas: #acceso, #admin, #admin/productos, #carrito y #checkout.
-
-Revisar primero AGENTS.md, este documento y docs/avance-03-acceso-panel.md. La lógica del acceso/panel está en src/components/access.ts; la autenticación pendiente en src/services/auth.ts.
-
-## GitHub y Notion
-
-Actualización del usuario: las subidas a GitHub quedan pausadas hasta una nueva instrucción explícita. Continuar localmente sin push ni PR.
-
-Notion: https://www.notion.so/40d1a2cc445d814db5d1e32c432b6095
-
-La rama sigue a origin/frontend-bafar. Al inicio del cierre había cinco commits locales pendientes de subir; este cierre añade un commit documental. La publicación desde el entorno del agente falló antes por el gestor de credenciales; no se confirmó push de estos avances. Revisar git status y publicar desde la terminal del usuario con git push cuando corresponda. No confundir commits locales con cambios ya publicados.
-
-El servidor de vista previa es temporal y puede detenerse entre sesiones; todos los archivos fuente y el historial Git permanecen guardados.
+Todo se guarda localmente. Revisar git status al retomar sin subir a GitHub. El servidor temporal puede detenerse entre sesiones; los archivos fuente y commits permanecen guardados.

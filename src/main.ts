@@ -7,6 +7,7 @@ import { createCart } from './components/cart';
 import { products } from './data/products';
 import { bagArt } from './components/bag';
 import type { Category } from './types/product';
+import { createCatalogRepository, baseCategories, legacyColorId, normalizedName } from './services/catalogs';
 
 function el<T extends HTMLElement>(selector: string): T {
   const result = document.querySelector<T>(selector);
@@ -17,6 +18,20 @@ const money = (value: number): string => new Intl.NumberFormat('es-MX', { style:
 let category: Category = 'Todas';
 let searchTerm = '';
 let toastTimer: ReturnType<typeof setTimeout>;
+let catalogStorage: Storage | undefined;
+try { catalogStorage = localStorage; } catch { /* Los catálogos funcionarán en memoria. */ }
+const catalogs = createCatalogRepository(catalogStorage);
+let colorFilter = '';
+const publicCategoryId = (name: string) => baseCategories.find(c => normalizedName(c.name) === normalizedName(name))?.id;
+function escapeText(text: string): string { return text.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!); }
+function renderCatalogOptions() {
+  const types = el<HTMLSelectElement>('#public-category-filter');
+  const colors = el<HTMLSelectElement>('#public-color-filter');
+  types.replaceChildren(new Option('Todas', 'Todas'), ...catalogs.categories().map(c => new Option(c.name, c.id)));
+  types.value = category;
+  colors.replaceChildren(new Option('Todos los colores', ''), ...catalogs.colors().map(c => new Option(c.name, c.id)));
+  colors.value = colorFilter;
+}
 
 el('#hero-bag').innerHTML = bagArt(products[0], 'hero');
 el('#year').textContent = String(new Date().getFullYear());
@@ -29,19 +44,21 @@ function notify(message: string): void {
   toastTimer = setTimeout(() => toast.classList.remove('visible'), 2600);
 }
 function renderProducts(): void {
-  const visible = products.filter(p => (category === 'Todas' || p.category === category) && `${p.name} ${p.label} ${p.category}`.toLocaleLowerCase('es').includes(searchTerm));
-  el('#products').innerHTML = visible.map(p => `<article class="product-card"><div class="product-image"><span class="product-tag">${p.category.toUpperCase()}</span>${bagArt(p, 'catalog')}</div><div class="product-meta"><div class="product-title"><h3>${p.name}</h3><span>${money(p.price)}</span></div><p class="product-color"><span class="swatch" style="background:${p.color}" aria-hidden="true"></span>${p.label} · MXN</p></div><button class="add-button" data-add="${p.id}" aria-label="Agregar ${p.name} a la bolsa">Agregar a mi bolsa <span aria-hidden="true">+</span></button></article>`).join('');
+  const visible = products.filter(p => (category === 'Todas' || publicCategoryId(p.category) === category) && (!colorFilter || legacyColorId(p.label) === colorFilter) && `${p.name} ${p.label} ${p.category}`.toLocaleLowerCase('es').includes(searchTerm));
+  el('#products').innerHTML = visible.map(p => `<article class="product-card"><div class="product-image"><span class="product-tag">${escapeText(catalogs.categories().find(c => c.id === publicCategoryId(p.category))?.name.toUpperCase() ?? p.category.toUpperCase())}</span>${bagArt(p, 'catalog')}</div><div class="product-meta"><div class="product-title"><h3>${p.name}</h3><span>${money(p.price)}</span></div><p class="product-color"><span class="swatch" style="background:${p.color}" aria-hidden="true"></span>${escapeText(catalogs.colors().find(c => c.id === legacyColorId(p.label))?.name ?? p.label)} · MXN</p></div><button class="add-button" data-add="${p.id}" aria-label="Agregar ${p.name} a la bolsa">Agregar a mi bolsa <span aria-hidden="true">+</span></button></article>`).join('');
   el('#empty').hidden = visible.length > 0;
   el('#results').textContent = `${visible.length} ${visible.length === 1 ? 'bolsa' : 'bolsas'}`;
   document.querySelectorAll<HTMLButtonElement>('[data-filter]').forEach(button => {
-    const selected = button.dataset.filter === category;
+    const selected = button.dataset.filter === 'Todas' ? category === 'Todas' : publicCategoryId(button.dataset.filter!) === category;
     button.classList.toggle('active', selected);
     button.setAttribute('aria-pressed', String(selected));
   });
 }
 function setCategory(value: string): void {
-  if (!['Todas', 'Tote', 'Crossbody', 'Mini'].includes(value)) return;
-  category = value as Category;
+  const option = catalogs.categories().find(c => c.id === value || c.name === value || c.id === publicCategoryId(value));
+  if (value !== 'Todas' && !option) return;
+  category = value === 'Todas' ? 'Todas' : option!.id;
+  el<HTMLSelectElement>('#public-category-filter').value = category;
   renderProducts();
 }
 function info(title: string, text: string): void {
@@ -73,11 +90,15 @@ el('#search').addEventListener('submit', event => {
   event.preventDefault();
   searchTerm = el<HTMLInputElement>('#search-input').value.trim().toLocaleLowerCase('es');
   category = 'Todas';
+  el<HTMLSelectElement>('#public-category-filter').value = 'Todas';
   renderProducts();
   location.hash = 'catalogo';
   el('#catalogo').scrollIntoView();
 });
-el('#clear-search').addEventListener('click', () => { searchTerm = ''; el<HTMLInputElement>('#search-input').value = ''; setCategory('Todas'); });
+el('#clear-search').addEventListener('click', () => { searchTerm = ''; colorFilter = ''; el<HTMLSelectElement>('#public-color-filter').value = ''; el<HTMLInputElement>('#search-input').value = ''; setCategory('Todas'); });
+el('#public-category-filter').addEventListener('change', event => setCategory((event.target as HTMLSelectElement).value));
+el('#public-color-filter').addEventListener('change', event => { colorFilter = (event.target as HTMLSelectElement).value; renderProducts(); });
+window.addEventListener('bagstore-catalogs-changed', () => { renderCatalogOptions(); renderProducts(); });
 el('#products').addEventListener('click', event => {
   const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-add]');
   if (!button) return;
@@ -86,8 +107,9 @@ el('#products').addEventListener('click', event => {
 });
 document.querySelectorAll<HTMLButtonElement>('[data-close]').forEach(button => button.addEventListener('click', () => el<HTMLDialogElement>(`#${button.dataset.close}`).close()));
 el('#returns-info').addEventListener('click', () => info('Cambios y devoluciones', 'El formulario y la política se definirán con el equipo. Esta demostración todavía no procesa solicitudes de devolución.'));
-renderProducts();
+renderCatalogOptions(); renderProducts();
 
 
 const shoppingCart = createCart(notify);
-setupAccess();
+setupAccess(catalogs);
+renderCatalogOptions();
