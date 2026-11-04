@@ -1,6 +1,7 @@
 import './styles.css';
 import './cart.css';
 import './access.css';
+import './products.css';
 import { setupAccess } from './components/access';
 import { createCart } from './components/cart';
 import { products } from './data/products';

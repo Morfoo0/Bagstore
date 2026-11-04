@@ -19,6 +19,8 @@ Nombre comercial provisional: Bagstore. Paleta aprobada: Beige clásico (docs/di
 
 ## Siguiente paso acordado
 
+Actualización posterior: se implementaron formularios de creación/edición, desactivar/reactivar y filtros con guardado local exclusivo del panel. Ver docs/avance-04-productos.md. Compilación y siete pruebas correctas; falta revisión interactiva/visual de esta entrega antes de continuar con categorías y colecciones. La siguiente descripción conserva el plan anterior como contexto.
+
 Crear y editar productos en el panel: formularios, validaciones visuales y confirmación de desactivación, inicialmente con datos de ejemplo. Acordar con el equipo los campos, operaciones y la diferencia entre eliminar y desactivar antes de definir contratos definitivos.
 
 Después: categorías, colecciones, existencias y reportes; completar detalle de producto, reseñas, compartir, devoluciones y portafolios (definición académica pendiente); integrar fetch, sesiones y permisos reales.
@@ -36,6 +38,8 @@ Usar la dirección que imprima Vite. Rutas: #acceso, #admin, #admin/productos, #
 Revisar primero AGENTS.md, este documento y docs/avance-03-acceso-panel.md. La lógica del acceso/panel está en src/components/access.ts; la autenticación pendiente en src/services/auth.ts.
 
 ## GitHub y Notion
+
+Actualización del usuario: las subidas a GitHub quedan pausadas hasta una nueva instrucción explícita. Continuar localmente sin push ni PR.
 
 Notion: https://www.notion.so/40d1a2cc445d814db5d1e32c432b6095
 

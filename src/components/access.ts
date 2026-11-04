@@ -1,5 +1,5 @@
 import { products } from '../data/products';
-import { bagArt } from './bag';
+import { setupProductManager } from './product-manager';
 import { AuthNotConfiguredError, signIn } from '../services/auth';
 
 function node<T extends HTMLElement = HTMLElement>(selector: string): T {
@@ -10,7 +10,7 @@ function node<T extends HTMLElement = HTMLElement>(selector: string): T {
 
 const sections = {
   resumen: { title: 'Todo empieza con una buena base.', subtitle: 'Un vistazo al espacio de trabajo de Bagstore.' },
-  productos: { title: 'Tus productos.', subtitle: 'Consulta el catálogo de ejemplo. Alta, edición y desactivación: siguiente entrega.' },
+  productos: { title: 'Tus productos.', subtitle: 'Crea, edita y organiza productos de prueba en este navegador.' },
   categorias: { title: 'Un lugar para cada estilo.', subtitle: 'Categorías de ejemplo utilizadas en el catálogo público.' },
   colecciones: { title: 'Colecciones con personalidad.', subtitle: 'Aquí se organizarán las colecciones y sus productos.' },
   existencias: { title: 'Cada bolsa cuenta.', subtitle: 'Aquí se consultarán y ajustarán las existencias autorizadas por el servidor.' },
@@ -58,7 +58,6 @@ export function setupAccess(): void {
   const categories = [...new Set(products.map(product => product.category))];
   node('#admin-product-count').textContent = String(products.length);
   node('#admin-category-count').textContent = String(categories.length);
-  node('#admin-product-rows').innerHTML = products.map(product => `<tr><td><div class="admin-product-name"><span>${bagArt(product, 'admin')}</span><div><strong>${product.name}</strong><small>BS-${String(product.id).padStart(3, '0')}</small></div></div></td><td>${product.category}</td><td>${product.label}</td><td>${new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(product.price)}</td><td><span class="admin-tag">Ejemplo</span></td></tr>`).join('');
   node('#admin-categories').innerHTML = categories.map(category => `<article class="admin-category"><span aria-hidden="true">◇</span><h3>${category}</h3><p>${products.filter(p => p.category === category).length} productos de ejemplo</p></article>`).join('');
 
   function route(): void {
@@ -94,6 +93,7 @@ export function setupAccess(): void {
     }
     window.scrollTo({ top: 0, behavior: 'instant' });
   }
+  setupProductManager();
   window.addEventListener('hashchange', route);
   route();
 }
