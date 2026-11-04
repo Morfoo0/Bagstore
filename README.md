@@ -1,3 +1,5 @@
+> Estado vigente: entrega 6. Panel y tienda comparten productos locales. Detalle, colecciones, inventario, reportes, reseñas, compartir, devoluciones y compra de prueba implementados. API real, sesión/roles y revisión visual nueva pendientes. Consultar docs/avance-06-recorridos-frontend.md y docs/contrato-api-propuesto.md. GitHub continúa pausado.
+
 # Tienda de bolsas escolar
 
 Carpeta independiente para la preparación del agente frontend en Codex.

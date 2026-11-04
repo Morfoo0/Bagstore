@@ -1,3 +1,5 @@
+import { escapeHtml } from '../ui';
+import type { CommerceRepository } from '../services/commerce';
 import { products } from '../data/products';
 import { bagArt } from './bag';
 
@@ -10,7 +12,7 @@ function element<T extends HTMLElement = HTMLElement>(selector: string): T {
   return node;
 }
 
-export function createCart(notify: (message: string) => void): { add: (id: number) => void } {
+export function createCart(notify: (message: string) => void, commerce: CommerceRepository) {
   const items = new Map<number, number>();
   let gift = false;
   let coupon = false;
@@ -33,6 +35,14 @@ export function createCart(notify: (message: string) => void): { add: (id: numbe
     catch { storageAvailable = false; }
   }
   function render() {
+    let changed = false;
+    for (const [id, qty] of items) {
+      const max = Math.min(10, commerce.quantity(id));
+      if (!products.some(p => p.id === id) || max === 0) { items.delete(id); changed = true; }
+      else if (qty > max) { items.set(id, max); changed = true; }
+    }
+    if (changed) { save(); notify('Actualizamos tu carrito según los productos y existencias de prueba disponibles.'); }
+
     const { subtotal, discount, total, count } = totals();
     element('#cart-count').textContent = String(count);
     element('#page-cart-count').textContent = `(${count} ${count === 1 ? 'producto' : 'productos'})`;
@@ -42,7 +52,7 @@ export function createCart(notify: (message: string) => void): { add: (id: numbe
     if (!count && location.hash === '#checkout') { location.hash = 'carrito'; return; }
     element('#cart-rows').innerHTML = [...items].map(([id, qty]) => {
       const product = products.find(p => p.id === id)!;
-      return `<tr><td><div class="cart-product"><div class="cart-product-art">${bagArt(product, 'page-cart')}</div><div><h2>${product.name}</h2><p>Color: ${product.label}</p><span class="cart-reference">REF. BS-${String(id).padStart(3, '0')}</span><button class="cart-remove" data-remove="${id}" aria-label="Eliminar ${product.name}">Eliminar</button></div></div></td><td data-label="Precio">${money(product.price)}</td><td data-label="Cantidad"><div class="cart-stepper"><button data-id="${id}" data-delta="-1" aria-label="Quitar una unidad de ${product.name}">−</button><span aria-label="${qty} unidades">${qty}</span><button data-id="${id}" data-delta="1" ${qty >= 10 ? 'disabled' : ''} aria-label="Agregar una unidad de ${product.name}">+</button></div></td><td data-label="Subtotal" class="line-total">${money(product.price * qty)}</td></tr>`;
+      return `<tr><td><div class="cart-product"><div class="cart-product-art">${product.imageData ? `<img src="${product.imageData}" alt="${escapeHtml(product.name)}"/>` : bagArt(product, 'page-cart')}</div><div><h2>${escapeHtml(product.name)}</h2><p>Color: ${escapeHtml(product.label)}</p><span class="cart-reference">REF. BS-${String(id).padStart(3, '0')}</span><button class="cart-remove" data-remove="${id}" aria-label="Eliminar ${escapeHtml(product.name)}">Eliminar</button></div></div></td><td data-label="Precio">${money(product.price)}</td><td data-label="Cantidad"><div class="cart-stepper"><button data-id="${id}" data-delta="-1" aria-label="Quitar una unidad de ${escapeHtml(product.name)}">−</button><span aria-label="${qty} unidades">${qty}</span><button data-id="${id}" data-delta="1" ${qty >= Math.min(10, commerce.quantity(id)) ? 'disabled' : ''} aria-label="Agregar una unidad de ${escapeHtml(product.name)}">+</button></div></td><td data-label="Subtotal" class="line-total">${money(product.price * qty)}</td></tr>`;
     }).join('');
     element('#summary-subtotal').textContent = money(subtotal);
     element('#summary-discount').textContent = `− ${money(discount)}`;
@@ -57,7 +67,7 @@ export function createCart(notify: (message: string) => void): { add: (id: numbe
     element('#cart-storage-note').textContent = storageAvailable ? 'Tu selección se guarda en este navegador. Máximo de prueba: 10 unidades por modelo.' : 'No se pudo guardar en este navegador. Tu selección se conservará solo mientras esta página esté abierta.';
     element('#review-items').innerHTML = [...items].map(([id, qty]) => {
       const product = products.find(p => p.id === id)!;
-      return `<li><span>${product.name} <small>× ${qty}</small></span><strong>${money(product.price * qty)}</strong></li>`;
+      return `<li><span>${escapeHtml(product.name)} <small>× ${qty}</small></span><strong>${money(product.price * qty)}</strong></li>`;
     }).join('');
     element('#review-total').textContent = money(total);
     element('#review-gift').textContent = gift ? 'Sí, marcado para regalo (ejemplo)' : 'Sin empaque de regalo';
@@ -65,9 +75,10 @@ export function createCart(notify: (message: string) => void): { add: (id: numbe
   }
   function route() {
     if (location.hash === '#acceso' || location.hash === '#admin' || location.hash.startsWith('#admin/')) return;
+    if (location.hash.startsWith('#producto/') || location.hash.startsWith('#coleccion/') || ['#devoluciones', '#portafolio'].includes(location.hash) || location.hash.startsWith('#compra/')) return;
     const isCart = location.hash === '#carrito' || location.hash === '#checkout';
     const isCheckout = location.hash === '#checkout' && totals().count > 0;
-    for (const child of element('main').children) if (child instanceof HTMLElement) child.hidden = child.id === 'cart-page' ? !isCart : isCart || ['access-page', 'admin-page'].includes(child.id);
+    for (const child of element('main').children) if (child instanceof HTMLElement) child.hidden = child.id === 'cart-page' ? !isCart : isCart || ['access-page', 'admin-page', 'extra-page'].includes(child.id);
     element('#cart-view').hidden = isCheckout;
     element('#checkout-view').hidden = !isCheckout;
     element('#cart-step-1').classList.toggle('current', !isCheckout);
@@ -114,15 +125,18 @@ export function createCart(notify: (message: string) => void): { add: (id: numbe
   });
   element('#gift-option').addEventListener('change', event => { gift = (event.target as HTMLInputElement).checked; render(); });
   element('#checkout-button').addEventListener('click', () => { if (totals().count) location.hash = 'checkout'; });
-  element('#demo-purchase').addEventListener('click', () => {
-    element('#demo-order-message').hidden = false;
-    element('#demo-order-message').focus();
-  });
+  element('#demo-purchase').addEventListener('click', () => { if (totals().count) location.hash = 'compra/entrega'; });
   window.addEventListener('hashchange', () => { element('#demo-order-message').hidden = true; route(); });
+  window.addEventListener('bagstore-products-changed', render);
+  window.addEventListener('bagstore-commerce-changed', render);
   render(); route();
-  return { add(id) {
+  return {
+    snapshot: () => ({ ...totals(), lines: [...items].map(([id, qty]) => ({ id, qty })), coupon, gift }),
+    clear() { items.clear(); coupon = false; save(); render(); },
+    add(id: number) {
     if (!products.some(p => p.id === id)) return;
     const qty = items.get(id) ?? 0;
+    if (commerce.quantity(id) <= qty) return notify('No hay más existencias de prueba de este producto.');
     if (qty >= 10) return notify('Límite de demostración: 10 unidades por producto.');
     items.set(id, qty + 1); save(); render(); notify('Agregaste una favorita a tu carrito.');
   } };

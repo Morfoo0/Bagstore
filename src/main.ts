@@ -1,3 +1,6 @@
+import { createCommerceRepository } from './services/commerce';
+import { setupFeatures } from './components/features';
+import './features.css';
 import './styles.css';
 import './cart.css';
 import './access.css';
@@ -14,13 +17,14 @@ function el<T extends HTMLElement>(selector: string): T {
   if (!result) throw new Error(`Elemento requerido no encontrado: ${selector}`);
   return result;
 }
-const money = (value: number): string => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(value);
+const money = (value: number): string => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 2 }).format(value);
 let category: Category = 'Todas';
 let searchTerm = '';
 let toastTimer: ReturnType<typeof setTimeout>;
 let catalogStorage: Storage | undefined;
 try { catalogStorage = localStorage; } catch { /* Los catálogos funcionarán en memoria. */ }
 const catalogs = createCatalogRepository(catalogStorage);
+const commerce = createCommerceRepository(catalogStorage);
 let colorFilter = '';
 const publicCategoryId = (name: string) => baseCategories.find(c => normalizedName(c.name) === normalizedName(name))?.id;
 function escapeText(text: string): string { return text.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!); }
@@ -44,8 +48,8 @@ function notify(message: string): void {
   toastTimer = setTimeout(() => toast.classList.remove('visible'), 2600);
 }
 function renderProducts(): void {
-  const visible = products.filter(p => (category === 'Todas' || publicCategoryId(p.category) === category) && (!colorFilter || legacyColorId(p.label) === colorFilter) && `${p.name} ${p.label} ${p.category}`.toLocaleLowerCase('es').includes(searchTerm));
-  el('#products').innerHTML = visible.map(p => `<article class="product-card"><div class="product-image"><span class="product-tag">${escapeText(catalogs.categories().find(c => c.id === publicCategoryId(p.category))?.name.toUpperCase() ?? p.category.toUpperCase())}</span>${bagArt(p, 'catalog')}</div><div class="product-meta"><div class="product-title"><h3>${p.name}</h3><span>${money(p.price)}</span></div><p class="product-color"><span class="swatch" style="background:${p.color}" aria-hidden="true"></span>${escapeText(catalogs.colors().find(c => c.id === legacyColorId(p.label))?.name ?? p.label)} · MXN</p></div><button class="add-button" data-add="${p.id}" aria-label="Agregar ${p.name} a la bolsa">Agregar a mi bolsa <span aria-hidden="true">+</span></button></article>`).join('');
+  const visible = products.filter(p => (category === 'Todas' || (p.categoryId ?? publicCategoryId(p.category)) === category) && (!colorFilter || (p.colorId ?? legacyColorId(p.label)) === colorFilter) && `${escapeText(p.name)} ${p.label} ${p.category}`.toLocaleLowerCase('es').includes(searchTerm));
+  el('#products').innerHTML = visible.map(p => `<article class="product-card"><a class="product-image product-image-link" href="#producto/${p.id}" aria-label="Ver ${escapeText(p.name)}"><span class="product-tag">${escapeText(catalogs.categories().find(c => c.id === (p.categoryId ?? publicCategoryId(p.category)))?.name.toUpperCase() ?? p.category.toUpperCase())}</span>${p.imageData ? `<img class="public-product-photo" src="${p.imageData}" alt="${escapeText(p.name)}"/>` : bagArt(p, 'catalog')}</a><div class="product-meta"><div class="product-title"><h3><a href="#producto/${p.id}">${escapeText(p.name)}</a></h3><span>${money(p.price)}</span></div><p class="product-color"><span class="swatch" style="background:${p.color}" aria-hidden="true"></span>${escapeText(catalogs.colors().find(c => c.id === (p.colorId ?? legacyColorId(p.label)))?.name ?? p.label)} · MXN</p></div><button class="add-button" data-add="${p.id}" ${commerce.quantity(p.id) === 0 ? 'disabled' : ''} aria-label="Agregar ${escapeText(p.name)} a la bolsa">${commerce.quantity(p.id) === 0 ? 'Sin existencias de prueba' : 'Agregar a mi bolsa'} <span aria-hidden="true">+</span></button></article>`).join('');
   el('#empty').hidden = visible.length > 0;
   el('#results').textContent = `${visible.length} ${visible.length === 1 ? 'bolsa' : 'bolsas'}`;
   document.querySelectorAll<HTMLButtonElement>('[data-filter]').forEach(button => {
@@ -99,6 +103,8 @@ el('#clear-search').addEventListener('click', () => { searchTerm = ''; colorFilt
 el('#public-category-filter').addEventListener('change', event => setCategory((event.target as HTMLSelectElement).value));
 el('#public-color-filter').addEventListener('change', event => { colorFilter = (event.target as HTMLSelectElement).value; renderProducts(); });
 window.addEventListener('bagstore-catalogs-changed', () => { renderCatalogOptions(); renderProducts(); });
+window.addEventListener('bagstore-products-changed', () => { renderCatalogOptions(); renderProducts(); });
+window.addEventListener('bagstore-commerce-changed', renderProducts);
 el('#products').addEventListener('click', event => {
   const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-add]');
   if (!button) return;
@@ -106,10 +112,11 @@ el('#products').addEventListener('click', event => {
   shoppingCart.add(id);
 });
 document.querySelectorAll<HTMLButtonElement>('[data-close]').forEach(button => button.addEventListener('click', () => el<HTMLDialogElement>(`#${button.dataset.close}`).close()));
-el('#returns-info').addEventListener('click', () => info('Cambios y devoluciones', 'El formulario y la política se definirán con el equipo. Esta demostración todavía no procesa solicitudes de devolución.'));
+el('#returns-info').addEventListener('click', () => { location.hash = 'devoluciones'; });
 renderCatalogOptions(); renderProducts();
 
 
-const shoppingCart = createCart(notify);
 setupAccess(catalogs);
+const shoppingCart = createCart(notify, commerce);
+setupFeatures(commerce, catalogs, shoppingCart, notify);
 renderCatalogOptions();

@@ -24,6 +24,10 @@ export function setupProductManager(catalogs: CatalogRepository): void {
   const repo = createProductRepository(products, storage, () => catalogs.categories().map(c => c.name));
   const categoryFor = (p: AdminProduct) => catalogs.categories().find(c => c.id === p.categoryId) ?? catalogs.categories().find(c => normalizedName(c.name) === normalizedName(p.category)) ?? catalogs.categories().find(c => c.id === baseCategories.find(v => normalizedName(v.name) === normalizedName(p.category))?.id);
   const colorFor = (p: AdminProduct) => catalogs.colors().find(c => c.id === p.colorId) ?? catalogs.colors().find(c => c.id === legacyColorId(p.label)) ?? catalogs.colors().find(c => normalizedName(c.name) === normalizedName(p.label));
+  function publishProducts() {
+    products.splice(0, products.length, ...repo.list().filter(p => p.active).map(p => ({ ...p, category: categoryFor(p)?.name ?? p.category, categoryId: categoryFor(p)?.id, label: colorFor(p)?.name ?? p.label, colorId: colorFor(p)?.id })));
+    window.dispatchEvent(new Event('bagstore-products-changed'));
+  }
   // Aplicar una vez la solicitud de prueba al abrir/recargar el panel.
   // La marca evita recrearlo si después el usuario cambia su nombre o estado.
   try {
@@ -100,7 +104,7 @@ export function setupProductManager(catalogs: CatalogRepository): void {
       const option = catalogKind === 'color' ? catalogs.addColor(name, get<HTMLInputElement>('#catalog-tone').value) : categoryEditing ? catalogs.renameCategory(categoryEditing, name) : catalogs.addCategory(name);
       refreshSelectors();
       if (catalogKind === 'color' && dialog.open) { get<HTMLSelectElement>('#product-label').value = option.id; dirty = true; preview(); }
-      catalogDialog.close(); render();
+      catalogDialog.close(); render(); publishProducts();
       if (catalogKind === 'category') document.querySelector<HTMLButtonElement>(`[data-category-edit="${option.id}"]`)?.focus();
       get('#category-status').textContent = catalogKind === 'category' ? `Categoría ${option.name} guardada en la demostración.` : '';
       window.dispatchEvent(new Event('bagstore-catalogs-changed'));
@@ -251,7 +255,7 @@ export function setupProductManager(catalogs: CatalogRepository): void {
     try {
       const saved = repo.save(draft, editing);
       const updated = editing !== undefined;
-      dirty = false; dialog.close(); render(); announce(`${saved.name}: ${updated ? 'cambios guardados' : 'producto creado'} en la demostración del panel.`);
+      dirty = false; dialog.close(); render(); publishProducts(); announce(`${saved.name}: ${updated ? 'cambios guardados' : 'producto creado'} en la demostración compartida con la tienda.`);
       (document.querySelector<HTMLButtonElement>(`[data-edit="${saved.id}"]`) ?? get('#product-new')).focus();
     } catch (error) {
       get('#product-form-error').textContent = error instanceof Error ? error.message : 'No pudimos guardar el producto.';
@@ -270,10 +274,10 @@ export function setupProductManager(catalogs: CatalogRepository): void {
     const product = repo.list().find(p => p.id === changing);
     if (!product) return;
     try {
-      repo.setActive(product.id, !product.active); confirmation.close(); render();
+      repo.setActive(product.id, !product.active); confirmation.close(); render(); publishProducts();
       announce(`${product.name}: ${product.active ? 'desactivado' : 'reactivado'} en la demostración. No se borraron sus datos.`);
       (document.querySelector<HTMLButtonElement>(`[data-active="${product.id}"]`) ?? get('#product-new')).focus();
     } catch { get('#product-confirm-error').hidden = false; }
   });
-  refreshSelectors(); render();
+  refreshSelectors(); render(); publishProducts();
 }

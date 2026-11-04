@@ -13,9 +13,11 @@ const sections = {
   resumen: { title: 'Todo empieza con una buena base.', subtitle: 'Un vistazo al espacio de trabajo de Bagstore.' },
   productos: { title: 'Tus productos.', subtitle: 'Crea, edita y organiza productos de prueba en este navegador.' },
   categorias: { title: 'Un lugar para cada estilo.', subtitle: 'Agrega y renombra tipos de bolsa para seleccionarlos en tus productos.' },
-  colecciones: { title: 'Colecciones con personalidad.', subtitle: 'Aquí se organizarán las colecciones y sus productos.' },
-  existencias: { title: 'Cada bolsa cuenta.', subtitle: 'Aquí se consultarán y ajustarán las existencias autorizadas por el servidor.' },
-  reportes: { title: 'Conoce tus resultados.', subtitle: 'Aquí se presentarán los reportes de ventas.' }
+  colecciones: { title: 'Colecciones con personalidad.', subtitle: 'Crea colecciones y asocia productos activos de la tienda de prueba.' },
+  existencias: { title: 'Cada bolsa cuenta.', subtitle: 'Consulta y ajusta existencias ficticias para probar el recorrido completo.' },
+  reportes: { title: 'Conoce tus resultados.', subtitle: 'Pedidos de demostración, filtros y exportación de resultados locales.' },
+  devoluciones: { title: 'Acompaña cada solicitud.', subtitle: 'Gestiona solicitudes locales sin reembolsos reales.' },
+  conexion: { title: 'Conectemos las piezas.', subtitle: 'Cliente HTTP preparado; contratos y servidor pendientes del equipo.' }
 };
 type AdminSection = keyof typeof sections;
 

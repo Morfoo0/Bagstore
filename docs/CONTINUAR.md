@@ -8,6 +8,28 @@
 - Cada integrante trabaja en su propia base y rama. Nuestra rama: frontend-bafar. No crear main para continuar.
 - No ejecutar push ni publicar PR hasta nueva instrucción expresa del usuario. Se permiten commits locales.
 
+## Estado vigente — entrega 6
+
+Consultar docs/avance-06-recorridos-frontend.md y docs/contrato-api-propuesto.md.
+
+- Productos activos del panel y tienda unificados, incluyendo fotos y catálogos por ID.
+- Detalle, reseñas, compartir, colecciones, inventario, reportes CSV y devoluciones implementados con persistencia local.
+- Recorrido de compra de demostración con entrega/pago/confirmación; genera pedido ficticio y descuenta stock local.
+- Inventario inicial: 20 unidades ficticias por producto. No existen ventas de ejemplo precargadas.
+- Portafolio de colecciones implementado como propuesta pendiente de confirmar con escuela/equipo.
+- Cliente fetch y comprobación de salud configurables. Sesión, roles y recursos reales todavía sin conectar.
+- npm test: 35 pruebas correctas. npm run build: correcto. Pruebas DOM con jsdom; revisión visual nueva pendiente en navegador real.
+
+## Retomar
+
+1. npm run dev y revisar #catalogo, #producto/1, #admin/colecciones, #admin/existencias, #admin/reportes y #devoluciones.
+2. Probar compra local con un producto activo. No ingresar datos personales/bancarios reales.
+3. Revisar visualmente móvil/escritorio, teclado y carga real de fotos. Corregir cualquier problema observado.
+4. Acordar API con Python antes de sustituir repositorios locales. Confirmar contenido y significado de portafolios.
+5. Mantener Notion al día y NO publicar en GitHub hasta instrucción expresa.
+
+## Historial anterior (sustituido por entrega 6)
+
 ## Estado actual
 
 - Inicio, encabezado, pie, menú móvil, navegación y ayuda iniciales.
