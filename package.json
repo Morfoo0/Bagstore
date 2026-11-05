@@ -8,7 +8,10 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
-    "check:backend": "node scripts/check-backend.mjs"
+    "check:backend": "node scripts/check-backend.mjs",
+    "dev:backend": "node scripts/backend.mjs dev",
+    "test:backend": "node scripts/backend.mjs test",
+    "setup:backend": "node scripts/backend.mjs setup"
   },
   "devDependencies": {
     "jsdom": "^30.1.3",

@@ -16,7 +16,7 @@ import { setupBackendApp } from './components/backend-app';
 
 const runtime = (import.meta as ImportMeta & {env: Record<string,string|undefined>}).env;
 if (runtime.VITE_DATA_SOURCE === 'api') {
-  setupBackendApp(runtime.VITE_API_BASE_URL || window.location.origin);
+  setupBackendApp(runtime.VITE_API_BASE_URL || window.location.origin, undefined, runtime.VITE_INTEGRATED_BACKEND === '1');
 } else {
 function el<T extends HTMLElement>(selector: string): T {
   const result = document.querySelector<T>(selector);

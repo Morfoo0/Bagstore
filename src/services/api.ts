@@ -2,6 +2,8 @@ export class ApiError extends Error {
   status: number; code?: string; details: { campo: string; mensaje: string }[];
   constructor(message: string, status = 0, code?: string, details: { campo: string; mensaje: string }[] = []) { super(message); this.name = 'ApiError'; this.status = status; this.code = code; this.details = details; }
 }
+let csrfToken: string | undefined;
+export function setCsrfToken(value?: string) { csrfToken = value; }
 export class ApiClient {
   baseUrl: string;
   private fetcher: typeof fetch;
@@ -16,6 +18,7 @@ export class ApiClient {
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const headers = new Headers(options.headers); headers.set('Accept', 'application/json');
+      if (csrfToken && options.method && !['GET','HEAD','OPTIONS'].includes(options.method.toUpperCase())) headers.set('X-CSRF-Token',csrfToken);
       if (options.body && !(options.body instanceof FormData)) headers.set('Content-Type', 'application/json');
       const response = await this.fetcher(`${this.baseUrl}${path}`, { ...options, headers, signal: controller.signal, credentials: 'include' });
       if (response.status === 204) return undefined as T;

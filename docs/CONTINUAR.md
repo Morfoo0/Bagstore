@@ -8,7 +8,19 @@
 - Cada integrante trabaja en su propia base y rama. Nuestra rama: frontend-bafar. No crear main para continuar.
 - No ejecutar push ni publicar PR hasta nueva instrucción expresa del usuario. Se permiten commits locales.
 
-## Estado vigente — entrega 10: API
+## Estado vigente — entrega 11: backend completo local
+
+Autorizado integrar backend y base sin operar en GitHub. Backend propio en backend/ (no modifica la copia del equipo), PostgreSQL privado en 127.0.0.1:55432, FastAPI en 8001. .env.local activa modo API integrado. Credenciales administrativas solo en backend/.runtime/ACCESO-LOCAL.txt, ignoradas por Git; no copiarlas a Notion.
+
+Funciona: cuentas/sesiones/roles/CSRF, administración, colores, fotos, colecciones completas, inventario/historial, cotización, pedidos, reportes/ticket/CSV, seguimiento/guía, reseñas y devoluciones. Pagos se verifican manualmente y las guías son externas existentes; no hay pasarela ni reembolsos automáticos.
+
+Validado: 52 pruebas frontend, 11 backend con PostgreSQL y recorrido DOM HTTP completo, compilación correcta y copia pg_dump verificada en .runtime/backups. No revisión visual integral ni impresión física. Los datos demo anteriores se conservan.
+
+Para iniciar: npm run dev:backend y, en otra terminal, npm run dev. Frontend compilado disponible también desde http://127.0.0.1:8001 tras npm run build. Documentación: backend/README.md y docs/avance-11-backend-postgresql.md. Dependencias bloqueadas en backend/requirements.lock.txt. Para instalar desde cero: npm run setup:backend (requiere PostgreSQL instalado).
+
+Procesos locales dejados activos: PostgreSQL privado, backend 8001 y frontend Vite 5173. GitHub sigue pausado. Pendientes externos: proveedor de pagos/tarjetas, etiquetas de paquetería, correo, políticas comerciales y despliegue público; ver límites en backend/README.md.
+
+## Historial — entrega 10: API
 
 Frontend adaptado al backend 5db5cc94dad8ec70c966bdc566d13754ab9278f2. .env.local activa VITE_DATA_SOURCE=api con proxy /api a Python en 8000. Catálogo, detalle, categorías y colecciones consultan servidor; carrito API independiente. Formularios y PUT preparados, guardado bloqueado sin sesión administrativa real. Edición de colecciones bloqueada hasta recibir membresía completa. Los módulos sin endpoints se identifican como pendientes; no se mezclan sus ejemplos con datos de API.
 

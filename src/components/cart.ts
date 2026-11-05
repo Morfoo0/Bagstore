@@ -73,7 +73,7 @@ export function createCart(notify: (message: string) => void, commerce: Commerce
   }
   function route() {
     if (location.hash === '#registro' || location.hash === '#acceso' || location.hash === '#admin' || location.hash.startsWith('#admin/')) return;
-    if (location.hash.startsWith('#producto/') || location.hash.startsWith('#coleccion/') || ['#devoluciones', '#portafolio'].includes(location.hash) || location.hash.startsWith('#compra/')) return;
+    if (location.hash.startsWith('#producto/') || location.hash.startsWith('#coleccion/') || ['#pedidos', '#devoluciones', '#portafolio'].includes(location.hash) || location.hash.startsWith('#compra/')) return;
     const isCart = location.hash === '#carrito' || location.hash === '#checkout';
     const isCheckout = location.hash === '#checkout' && totals().count > 0;
     for (const child of element('main').children) if (child instanceof HTMLElement) child.hidden = child.id === 'cart-page' ? !isCart : isCart || ['access-page', 'admin-page', 'extra-page'].includes(child.id);

@@ -4,7 +4,8 @@ import type { CategoryDTO, CollectionDTO, ProductDTO, ProductSummary, ImageDTO, 
 import { products } from '../data/products';
 import { createCommerceRepository } from '../services/commerce';
 import { createCatalogRepository } from '../services/catalogs';
-import { requireCustomerAccess } from '../services/auth';
+import { requireCustomerAccess, configureAuth, currentUser, isAdministrator } from '../services/auth';
+import { setupIntegratedCommerce } from './integrated-commerce';
 import { setupAccess } from './access';
 import { createCart } from './cart';
 import { bagArt } from './bag';
@@ -13,8 +14,12 @@ import '../backend.css';
 
 const pendingPermission = 'Las escrituras requieren una sesión administrativa verificada. El backend todavía no ofrece autenticación; no se enviaron cambios.';
 /** El proveedor de permisos se conectará a la sesión verificada del servidor, nunca a localStorage. */
-export function setupBackendApp(baseUrl: string, verifiedAdmin: () => boolean = () => false) {
-  const api = new BackendCatalog(new ApiClient(baseUrl));
+export function setupBackendApp(baseUrl: string, verifiedAdmin: () => boolean = isAdministrator, integrated = false) {
+  const client = new ApiClient(baseUrl);
+  const api = new BackendCatalog(client);
+  let commerceUI: ReturnType<typeof setupIntegratedCommerce> | undefined;
+  let colors: {id:number;nombre:string;tono:string}[]=[];
+  let activeColor='';
   const summaries = new Map<number, ProductSummary>();
   const details = new Map<number, ProductDTO>();
   let categories: CategoryDTO[] = [];
@@ -30,13 +35,13 @@ export function setupBackendApp(baseUrl: string, verifiedAdmin: () => boolean = 
   const message = (s: string) => { $('#toast').textContent = s; $('#toast').classList.add('visible'); setTimeout(() => $('#toast').classList.remove('visible'), 3500); };
   const publish = (p: ProductDTO) => {
     details.set(p.id, p);
-    const view = {id:p.id, name:p.nombre, category:p.categoria.nombre, categoryId:String(p.categoria.id), price:p.precio, label:'Color no especificado', color:'#CDB89E', accent:'#948067', imageData:p.imagen_principal?.url};
+    const view = {id:p.id, name:p.nombre, category:p.categoria.nombre, categoryId:String(p.categoria.id), price:p.precio, label:p.color?.nombre || 'Color no especificado', color:p.color?.tono || '#CDB89E', accent:'#948067', imageData:p.imagen_principal?.url};
     const index = products.findIndex(v => v.id === p.id); if (index < 0) products.push(view); else products[index] = view;
     window.dispatchEvent(new Event('bagstore-products-changed'));
   };
   // Fuente API: no conservar productos/stock de la demostración ni reutilizar su carrito.
   products.splice(0);
-  const commerce = {...createCommerceRepository(), quantity: (id: number) => details.get(id)?.existencias ?? 0};
+  const commerce = {...createCommerceRepository(), quantity: (id: number) => details.get(id)?.estado==='activo' ? details.get(id)!.existencias : 0};
   setupAccess(createCatalogRepository(), false);
   const savedIds: number[] = [];
   try { const entries: unknown = JSON.parse(localStorage.getItem('bagstore.api-cart.v1') ?? '[]'); if (Array.isArray(entries)) for (const entry of entries) if (Array.isArray(entry) && Number.isSafeInteger(entry[0]) && entry[0] > 0) savedIds.push(entry[0]); } catch { /* Cart informa recuperación. */ }
@@ -71,7 +76,7 @@ export function setupBackendApp(baseUrl: string, verifiedAdmin: () => boolean = 
   async function loadPublic() {
     const version = ++publicVersion; $('#products').innerHTML = '<p role="status">Cargando bolsas…</p>'; $('#empty').hidden = true; pagination.innerHTML = ''; $('#catalogo').setAttribute('aria-busy','true');
     try {
-      const data = await api.products({pagina:publicPage,por_pagina:12,nombre:search,categoria_id:publicCategory || undefined,coleccion_id:publicCollection || undefined,orden:publicOrder});
+      const data = await api.products({color_id:activeColor || undefined,pagina:publicPage,por_pagina:12,nombre:search,categoria_id:publicCategory || undefined,coleccion_id:publicCollection || undefined,orden:publicOrder});
     if (version !== publicVersion) return;
       data.datos.forEach(p=>summaries.set(p.id,p));
       $('#products').innerHTML = data.datos.map(p=>`<article class="product-card"><a href="#producto/${p.id}" class="product-image product-image-link">${art(p)}</a><div class="product-meta"><h3><a href="#producto/${p.id}">${h(p.nombre)}</a></h3><p>${money(p.precio)} MXN · ${h(p.categoria.nombre)}</p></div><button class="add-button" data-api-add="${p.id}" ${!p.disponible?'disabled':''}>${p.disponible?'Agregar a mi bolsa':'Agotado'}</button></article>`).join('');
@@ -94,12 +99,13 @@ export function setupBackendApp(baseUrl: string, verifiedAdmin: () => boolean = 
   let editingResource: 'productos'|'categorias'|'colecciones' = 'productos';
   let editingId: number | undefined;
   let originalProduct: ProductDTO | undefined;
+  let collectionMembers: number[] | undefined;
   let selectableProducts: ProductSummary[] = [];
   let editorOpener: HTMLElement | null = null;
   const field = (name: string, label: string, value: string|number = '', attrs = '') => `<label for="api-${name}">${label}</label><input id="api-${name}" name="${name}" value="${h(String(value))}" ${attrs}/><p class="field-error" data-api-error="${name}" role="alert"></p>`;
   const stateField = (state = 'activo') => `<label for="api-estado">Estado</label><select id="api-estado" name="estado"><option value="activo" ${state==='activo'?'selected':''}>Activo</option><option value="inactivo" ${state==='inactivo'?'selected':''}>Inactivo</option></select>`;
   async function openEditor(resource: typeof editingResource, id?: number) {
-    editingResource = resource; editingId = id; originalProduct = undefined; editorOpener = document.activeElement as HTMLElement;
+    editingResource = resource; editingId = id; originalProduct = undefined; collectionMembers=undefined; editorOpener = document.activeElement as HTMLElement;
     editor.innerHTML = '<p role="status">Cargando formulario…</p>'; editor.showModal();
     try {
       let body = ''; let title = '';
@@ -111,22 +117,30 @@ export function setupBackendApp(baseUrl: string, verifiedAdmin: () => boolean = 
         const c = id ? await api.category(id) : undefined; title = id?'Editar categoría':'Nueva categoría';
         body = field('nombre','Nombre',c?.nombre,'required minlength="2" maxlength="80"') + `<label for="api-descripcion">Descripción</label><textarea id="api-descripcion" name="descripcion" maxlength="1000">${h(c?.descripcion || '')}</textarea>` + field('orden','Orden',c?.orden??0,'type="number" min="0" step="1" required') + stateField(c?.estado);
       } else {
-        const c = id ? await api.collection(id) : undefined; title = id?'Editar colección':'Nueva colección';
+        const c = id ? await api.collection(id) : undefined; collectionMembers=c?.producto_ids; title = id?'Editar colección':'Nueva colección';
         selectableProducts = [];
-        if (!id) {
+        if (!id || collectionMembers) {
           let memberPage = 1;
           while (true) {
-            const result = await api.products({pagina:memberPage,por_pagina:100}); selectableProducts.push(...result.datos);
+            const result = await api.products({pagina:memberPage,por_pagina:100,estado:verifiedAdmin()?'todos':'activo'}); selectableProducts.push(...result.datos);
             if(memberPage >= result.paginacion.total_paginas) break;
             if(++memberPage > 1000) throw new ApiError('Hay demasiados productos para este selector.');
           }
         }
         // GET actual no permite recuperar miembros inactivos: nunca reemplazar relaciones incompletas.
-        body = field('nombre','Nombre',c?.nombre,'required minlength="2" maxlength="100"') + `<label for="api-descripcion">Descripción</label><textarea id="api-descripcion" name="descripcion" maxlength="2000">${h(c?.descripcion || '')}</textarea>` + field('imagen_portada_url','URL de portada',c?.imagen_portada_url??'','type="url" maxlength="500"') + stateField(c?.estado) + `<fieldset><legend>Productos de la colección</legend>${id ? '<p>La selección actual aún no puede recuperarse de forma completa. La edición de esta colección está temporalmente deshabilitada.</p>' : '<div class="checkbox-grid">'+selectableProducts.map(p=>'<label><input type="checkbox" name="producto_ids" value="'+p.id+'"/> '+h(p.nombre)+'</label>').join('')+'</div>'}<p class="field-error" data-api-error="producto_ids" role="alert"></p></fieldset>`;
+        body = field('nombre','Nombre',c?.nombre,'required minlength="2" maxlength="100"') + `<label for="api-descripcion">Descripción</label><textarea id="api-descripcion" name="descripcion" maxlength="2000">${h(c?.descripcion || '')}</textarea>` + field('imagen_portada_url','URL de portada',c?.imagen_portada_url??'','type="url" maxlength="500"') + stateField(c?.estado) + `<fieldset><legend>Productos de la colección</legend>${id && !collectionMembers ? '<p>La selección actual aún no puede recuperarse de forma completa. La edición de esta colección está temporalmente deshabilitada.</p>' : '<div class="checkbox-grid">'+selectableProducts.map(p=>'<label><input type="checkbox" name="producto_ids" value="'+p.id+'" '+(collectionMembers?.includes(p.id)?'checked':'')+'/> '+h(p.nombre)+'</label>').join('')+'</div>'}<p class="field-error" data-api-error="producto_ids" role="alert"></p></fieldset>`;
       }
       if (!editor.open) return;
-      const incompleteMembership = resource === 'colecciones' && id !== undefined;
+      const incompleteMembership = resource === 'colecciones' && id !== undefined && !collectionMembers;
       editor.innerHTML = `<div class="ticket-toolbar"><h2 id="api-editor-title">${title}</h2><button type="button" class="product-secondary" data-editor-close>Cerrar</button></div><form id="api-write-form" class="feature-form">${body}<p class="access-feedback" id="api-write-status" role="status">${verifiedAdmin() ? incompleteMembership ? 'Edición bloqueada: falta membresía administrativa completa en la respuesta de colección.' : 'Revisa los campos antes de guardar.' : pendingPermission}</p><button class="button" type="submit" ${!verifiedAdmin() || incompleteMembership ? 'disabled' : ''}>${verifiedAdmin() ? 'Guardar cambios' : 'Guardar · requiere acceso administrativo'}</button></form>`;
+      if (resource === 'productos' && integrated) {
+        const form=editor.querySelector('form')!;
+        const colorField=document.createElement('div');colorField.innerHTML='<label for="api-color_id">Color</label><select id="api-color_id" name="color_id"><option value="">Sin especificar</option>'+colors.map(c=>'<option value="'+c.id+'" '+(originalProduct?.color?.id===c.id?'selected':'')+'>'+h(c.nombre)+'</option>').join('')+'</select><button type="button" class="product-secondary" id="server-add-color">Agregar color</button>';
+        form.querySelector('fieldset')!.before(colorField);
+        const upload=document.createElement('div');upload.innerHTML='<label for="server-photo-upload">Subir foto · JPG, PNG o WebP, máximo 5 MB</label><input id="server-photo-upload" type="file" accept="image/jpeg,image/png,image/webp"/><p id="server-photo-status" role="status"></p>';
+        form.querySelector('fieldset')!.prepend(upload);
+        form.querySelectorAll('.demo-note').forEach(e=>{if(e.textContent?.includes('SKU no cambia'))e.textContent='El SKU no cambia al editar. Sube fotografías o utiliza URLs de imágenes alojadas.';});
+      }
       if (resource === 'productos') for (const img of originalProduct?.imagenes ?? []) addImage(img);
       editor.querySelector<HTMLElement>('input')?.focus();
     } catch(error) { editor.innerHTML = `<h2 id="api-editor-title">No se pudo abrir el formulario</h2>${errorMarkup(error)}<button class="product-secondary" data-editor-close>Cerrar</button>`; }
@@ -146,7 +160,7 @@ export function setupBackendApp(baseUrl: string, verifiedAdmin: () => boolean = 
     event.preventDefault(); const form = event.target as HTMLFormElement; if (!form.reportValidity()) return;
     const status = $('#api-write-status');
     if (!verifiedAdmin()) { status.textContent = pendingPermission; return; }
-    if (editingResource === 'colecciones' && editingId !== undefined) { status.textContent = 'Falta recuperar la membresía administrativa completa. No se enviaron cambios.'; return; }
+    if (editingResource === 'colecciones' && editingId !== undefined && !collectionMembers) { status.textContent = 'Falta recuperar la membresía administrativa completa. No se enviaron cambios.'; return; }
     const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
     const data = new FormData(form); const value = (key: string) => String(data.get(key) ?? '').trim();
     form.querySelectorAll<HTMLElement>('[data-api-error]').forEach(e=>e.textContent='');
@@ -156,13 +170,13 @@ export function setupBackendApp(baseUrl: string, verifiedAdmin: () => boolean = 
       const estado = value('estado') as 'activo'|'inactivo';
       if(editingResource==='productos') {
         const images: ImageDTO[] = [...form.querySelectorAll('.api-image-row')].map(row=>({url:row.querySelector<HTMLInputElement>('[data-img-url]')!.value.trim(), texto_alternativo:row.querySelector<HTMLInputElement>('[data-img-alt]')!.value.trim() || null, orden:Number(row.querySelector<HTMLInputElement>('[data-img-order]')!.value), es_principal:row.querySelector<HTMLInputElement>('[data-img-main]')!.checked}));
-        await api.saveProduct({nombre:value('nombre'),descripcion:value('descripcion')||null,precio:Number(value('precio')),sku:value('sku').toUpperCase(),categoria_id:Number(value('categoria_id')),existencias:Number(value('existencias')),estado,imagenes:images},editingId);
+        await api.saveProduct({nombre:value('nombre'),descripcion:value('descripcion')||null,precio:Number(value('precio')),sku:value('sku').toUpperCase(),...(integrated?{color_id:Number(value('color_id'))||null}:{}),categoria_id:Number(value('categoria_id')),existencias:Number(value('existencias')),estado,imagenes:images},editingId);
       } else if(editingResource==='categorias') await api.saveCategory({nombre:value('nombre'),descripcion:value('descripcion')||null,orden:Number(value('orden')),estado},editingId);
       else {
         const ids = data.getAll('producto_ids').map(v=>Number(v));
         if(ids.some(id=>!Number.isSafeInteger(id)||id<=0)||ids.length>200)throw new ApiError('Selecciona hasta 200 productos válidos para la colección.');
         if(value('imagen_portada_url')&&!httpImage(value('imagen_portada_url')))throw new ApiError('La portada debe ser una URL HTTP o HTTPS.');
-        await api.saveCollection({nombre:value('nombre'),descripcion:value('descripcion')||null,estado,imagen_portada_url:value('imagen_portada_url')||null,producto_ids:ids});
+        await api.saveCollection({nombre:value('nombre'),descripcion:value('descripcion')||null,estado,imagen_portada_url:value('imagen_portada_url')||null,producto_ids:ids},editingId);
       }
       // Solo refrescar después de respuesta válida; no simular guardados locales.
       editor.close(); message('Cambios guardados en el servidor.'); await allCategories(); await loadCollections(); await loadPublic(); await renderAdmin(location.hash.split('/')[1]||'resumen');
@@ -178,16 +192,17 @@ export function setupBackendApp(baseUrl: string, verifiedAdmin: () => boolean = 
     }finally{submit.disabled=!verifiedAdmin();form.removeAttribute('aria-busy');}
   });
   async function renderAdmin(section: string, page = 1) {
+    if(commerceUI && await commerceUI.renderAdmin(section))return;
     const version = ++routeVersion; admin.innerHTML = '<p role="status">Cargando datos del servidor…</p>'; admin.setAttribute('aria-busy','true');
     try {
       let markup = '';
       if (section === 'productos' || section === 'existencias') {
-        const data = await api.products({pagina:page,por_pagina:20}); data.datos.forEach(p=>summaries.set(p.id,p));
-        markup = `<div class="admin-card-heading"><h2>${section==='existencias'?'Existencias del catálogo':'Productos'}</h2><button class="product-secondary" data-api-new="productos">Preparar nuevo producto</button></div><p class="demo-note">Se muestran productos activos. Consultar inactivos, guardar cambios y ajustar stock requiere autorización del backend. Abre un producto para consultar sus existencias y preparar los campos.</p><div class="admin-table-scroll"><table class="admin-table"><thead><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Disponibilidad</th><th>Acciones</th></tr></thead><tbody>${data.datos.map(p=>`<tr><td>${h(p.nombre)}</td><td>${h(p.categoria.nombre)}</td><td>${money(p.precio)}</td><td>${p.disponible?'Disponible':'Agotado'}</td><td><button class="product-secondary" data-api-edit="productos" data-id="${p.id}">Ver / preparar edición</button></td></tr>`).join('') || '<tr><td colspan="5">No hay productos activos.</td></tr>'}</tbody></table></div><div class="api-pagination">${pager(data,'admin')}</div>`;
+        const data = await api.products({pagina:page,por_pagina:20,estado:verifiedAdmin()?'todos':'activo'}); data.datos.forEach(p=>summaries.set(p.id,p));
+        markup = `<div class="admin-card-heading"><h2>${section==='existencias'?'Existencias del catálogo':'Productos'}</h2><button class="product-secondary" data-api-new="productos">Nuevo producto</button></div>${integrated?'<p>Consulta, edita y desactiva productos del catálogo.</p>':'<p class="demo-note">Se muestran productos activos. Consultar inactivos, guardar cambios y ajustar stock requiere autorización del backend.</p>'}<div class="admin-table-scroll"><table class="admin-table"><thead><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Disponibilidad</th><th>Acciones</th></tr></thead><tbody>${data.datos.map(p=>`<tr><td>${h(p.nombre)}</td><td>${h(p.categoria.nombre)}</td><td>${money(p.precio)}</td><td>${p.disponible?'Disponible':'Agotado'}</td><td><button class="product-secondary" data-api-edit="productos" data-id="${p.id}">Editar / consultar</button></td></tr>`).join('') || '<tr><td colspan="5">No hay productos activos.</td></tr>'}</tbody></table></div><div class="api-pagination">${pager(data,'admin')}</div>`;
       } else if (section === 'categorias' || section === 'colecciones') {
-        const data = section==='categorias'? await api.categories({pagina:page,por_pagina:20}) : await api.collections({pagina:page,por_pagina:20});
-        markup = `<div class="admin-card-heading"><h2>${section==='categorias'?'Categorías':'Colecciones'}</h2><button class="product-secondary" data-api-new="${section}">Preparar ${section==='categorias'?'categoría':'colección'}</button></div><p class="demo-note">Consulta activa de la API. Edición, estados y eliminación esperan acceso administrativo. El borrado de categorías/colecciones es definitivo; categorías con productos devuelven conflicto.</p><div class="collection-tile-grid">${data.datos.map(c=>`<article class="feature-card"><h3>${h(c.nombre)}</h3><p>${h(c.descripcion||'')}</p><p>${c.total_productos} productos · ${h(c.slug)}</p><button class="product-secondary" data-api-edit="${section}" data-id="${c.id}">Ver / preparar edición</button></article>`).join('') || '<p>No hay resultados.</p>'}</div><div class="api-pagination">${pager(data,'admin')}</div>`;
-      } else if (section === 'resumen') markup = `<h2>Catálogo conectado</h2><p>Productos, categorías y colecciones se consultan en la API del equipo. Los cambios del servidor se reflejan al actualizar.</p><p>Las cuentas, pedidos, pagos, reportes, reseñas y devoluciones aún necesitan endpoints.</p><a class="button" href="#admin/productos">Consultar productos</a>`;
+        const data = section==='categorias'? await api.categories({pagina:page,por_pagina:20,estado:verifiedAdmin()?'todos':'activo'}) : await api.collections({pagina:page,por_pagina:20,estado:verifiedAdmin()?'todos':'activo'});
+        markup = `<div class="admin-card-heading"><h2>${section==='categorias'?'Categorías':'Colecciones'}</h2><button class="product-secondary" data-api-new="${section}">Preparar ${section==='categorias'?'categoría':'colección'}</button></div>${integrated?'<p>Organiza tu catálogo y actualiza los estados de publicación.</p>':'<p class="demo-note">Consulta activa de la API. La edición requiere acceso administrativo.</p>'}<div class="collection-tile-grid">${data.datos.map(c=>`<article class="feature-card"><h3>${h(c.nombre)}</h3><p>${h(c.descripcion||'')}</p><p>${c.total_productos} productos · ${h(c.slug)}</p><button class="product-secondary" data-api-edit="${section}" data-id="${c.id}">Editar / consultar</button></article>`).join('') || '<p>No hay resultados.</p>'}</div><div class="api-pagination">${pager(data,'admin')}</div>`;
+      } else if (section === 'resumen') markup = `<h2>Catálogo conectado</h2><p>Productos, categorías y colecciones se consultan en la API del equipo. Los cambios del servidor se reflejan al actualizar.</p>${integrated?'<p>Cuentas, pedidos e inventario conectados a PostgreSQL.</p>':'<p>Las cuentas, pedidos, pagos, reportes, reseñas y devoluciones aún necesitan endpoints.</p>'}<a class="button" href="#admin/productos">Consultar productos</a>`;
       else if (section === 'conexion') { await api.health(); markup = '<h2>Conexión disponible</h2><p>El endpoint /api/health respondió JSON. Esto no acredita una sesión ni permisos administrativos.</p>'; }
       else markup = '<h2>Servicio pendiente de integración</h2><p>El backend actual solo ofrece catálogo. Esta sección se habilitará cuando existan los endpoints y permisos correspondientes.</p>';
       if(version===routeVersion)admin.innerHTML = markup;
@@ -197,6 +212,8 @@ export function setupBackendApp(baseUrl: string, verifiedAdmin: () => boolean = 
   async function route() {
     if (editor.open) editor.close();
     const hash = location.hash; const version = ++routeVersion;
+    if(commerceUI && await commerceUI.route(hash))return;
+    if(integrated && hash.startsWith('#admin') && !verifiedAdmin()){location.hash='acceso';return;}
     if(hash.startsWith('#compra/')) { requireCustomerAccess(); return; }
     if(hash.startsWith('#admin')) { extra.hidden = true; await renderAdmin(hash.split('/')[1] || 'resumen'); return; }
     if(hash==='#acceso'||hash==='#registro'){extra.hidden=true;return;}
@@ -205,10 +222,11 @@ export function setupBackendApp(baseUrl: string, verifiedAdmin: () => boolean = 
       for(const child of $('main').children)if(child instanceof HTMLElement)child.hidden=child!==extra;
       extra.hidden = false; extra.innerHTML = '<p role="status">Cargando…</p>';
       try {
-        if(productMatch){const p=await api.product(Number(productMatch[1]));if(version!==routeVersion)return;publish(p);extra.innerHTML=`<a href="#catalogo" class="continue-shopping">← Volver al catálogo</a><div class="detail-grid"><div class="detail-art">${art(p)}${p.imagenes.length>1?`<div class="api-gallery">${p.imagenes.slice().sort((a,b)=>a.orden-b.orden).map(i=>`<img src="${h(i.url)}" alt="${h(i.texto_alternativo||p.nombre)}"/>`).join('')}</div>`:''}</div><div><p class="eyebrow">${h(p.categoria.nombre)}</p><h1 tabindex="-1">${h(p.nombre)}</h1><p>SKU: ${h(p.sku)}</p><p class="detail-price">${money(p.precio)} MXN</p><p class="api-description">${h(p.descripcion||'')}</p><p>${p.existencias} unidades disponibles</p><button class="button" data-api-add="${p.id}" ${p.disponible?'':'disabled'}>${p.disponible?'Agregar a mi bolsa':'Agotado'}</button><button class="product-secondary" data-api-share="${p.id}">Copiar enlace</button><p class="demo-note">Los colores y las reseñas se incorporarán cuando estén disponibles en la API.</p></div></div>`;}
+        if(productMatch){const p=await api.product(Number(productMatch[1]));if(version!==routeVersion)return;publish(p);extra.innerHTML=`<a href="#catalogo" class="continue-shopping">← Volver al catálogo</a><div class="detail-grid"><div class="detail-art">${art(p)}${p.imagenes.length>1?`<div class="api-gallery">${p.imagenes.slice().sort((a,b)=>a.orden-b.orden).map(i=>`<img src="${h(i.url)}" alt="${h(i.texto_alternativo||p.nombre)}"/>`).join('')}</div>`:''}</div><div><p class="eyebrow">${h(p.categoria.nombre)}</p><h1 tabindex="-1">${h(p.nombre)}</h1><p>SKU: ${h(p.sku)}</p><p class="detail-price">${money(p.precio)} MXN</p><p class="api-description">${h(p.descripcion||'')}</p><p>${p.existencias} unidades disponibles</p><button class="button" data-api-add="${p.id}" ${p.disponible?'':'disabled'}>${p.disponible?'Agregar a mi bolsa':'Agotado'}</button><button class="product-secondary" data-api-share="${p.id}">Copiar enlace</button>${integrated?'<p>Color: '+h(p.color?.nombre||'Sin especificar')+'</p>':'<p class="demo-note">Los colores y las reseñas se incorporarán cuando estén disponibles en la API.</p>'}</div></div>`;}
         else if(hash==='#portafolio'){extra.innerHTML='<h1>Nuestras colecciones</h1><a href="#colecciones" class="button">Explorar colecciones</a>';}
         else extra.innerHTML='<h1>Cambios y devoluciones</h1><p>Para consultar y gestionar devoluciones necesitamos el servicio de pedidos y una cuenta verificada. Esta función todavía no está disponible.</p><a href="#catalogo" class="button">Volver al catálogo</a>';
       }catch(error){if(version===routeVersion)extra.innerHTML=errorMarkup(error);}
+      if(productMatch && commerceUI)void commerceUI.reviews(Number(productMatch[1]));
       extra.querySelector<HTMLElement>('h1')?.focus();return;
     }
     extra.hidden=true;
@@ -240,16 +258,49 @@ export function setupBackendApp(baseUrl: string, verifiedAdmin: () => boolean = 
   async function boot() {
     $('#cart-open').setAttribute('disabled','');
     try {
+      if(integrated)await configureAuth(baseUrl);
       // Restaurar solo IDs del carrito API; no importar datos de demostración.
       const saved = await Promise.allSettled([...new Set(savedIds)].map(async id=>publish(await api.product(id))));
       const unresolved = saved.some(r=>r.status==='rejected' && (!(r.reason instanceof ApiError) || r.reason.status!==404));
       if(unresolved)throw new ApiError('No pudimos verificar tu carrito guardado. Reintenta sin cerrar esta página.');
-      cart=createCart(message,commerce,'bagstore.api-cart.v1'); catalogReady=true; $('#cart-open').removeAttribute('disabled');
+      cart=createCart(message,commerce,'bagstore.api-cart.v1');
+      if(integrated)commerceUI=setupIntegratedCommerce(client,cart,extra,admin,async()=>{details.clear();await loadPublic();}); catalogReady=true; $('#cart-open').removeAttribute('disabled');
       await Promise.allSettled([allCategories().catch(error=>{message('Categorías: '+errorText(error));}),loadPublic(),loadCollections()]);
+      if(integrated){await loadColors();updateSessionUI();}
       await route();
     }catch(error){$('#products').innerHTML=errorMarkup(error); message(errorText(error));}
   }
   // Solo usado para reintentar restauración sin borrar un carrito por error de red.
   $('#cart-open').addEventListener('click',()=>{if(!catalogReady)void boot();});
+  async function loadColors(){colors=(await client.request<{datos:{id:number;nombre:string;tono:string}[]}>('/api/colores')).datos;colorSelect.disabled=false;colorSelect.replaceChildren(new Option('Todos los colores',''),...colors.map(c=>new Option(c.nombre,String(c.id))));colorSelect.value=activeColor;}
+  function updateSessionUI(){
+    if(!integrated)return;
+    $('.announcement span').textContent='BAGSTORE · TU TIENDA';
+    $('.admin-notice').textContent='Administración conectada a PostgreSQL. Los cambios se guardan en la base de datos.';
+    $('.admin-sidebar-bottom p').textContent='Catálogo, pedidos e inventario persistentes.';
+    const faq=document.querySelector('#ayuda details:nth-child(2) p');if(faq)faq.textContent='Regístrate o inicia sesión para confirmar tu pedido. Puedes pagar al recoger o acordar una transferencia con la tienda; el pago se verifica manualmente.';
+    const returnsFaq=document.querySelector('#ayuda details:nth-child(3) p');if(returnsFaq)returnsFaq.textContent='Desde Cambios y devoluciones puedes registrar una solicitud para productos de un pedido entregado y consultar su estado. Contacta a la tienda para acordar la devolución y cualquier reembolso.';
+    $('#admin-preview-link').textContent='Acceso a administración';
+    const account=$('#account');if(!account.dataset.integrated){account.dataset.integrated='1';account.addEventListener('click',()=>{if(currentUser())location.hash=isAdministrator()?'admin':'pedidos';});}
+
+    document.querySelectorAll('.access-demo-note:not(#purchase-access-note)').forEach(e=>e.textContent='Tu cuenta te permite comprar y consultar tus pedidos.');
+    $('.access-preview-note').textContent='El panel requiere una cuenta con permisos administrativos.';
+    document.querySelector('.api-sort')?.setAttribute('data-connected','true');
+    $('.admin-topbar>div')!.innerHTML='<span>'+h(currentUser()?.name||'Sin sesión')+'</span>';
+    document.querySelector('#server-account-links')?.remove();const links=document.createElement('span');links.id='server-account-links';links.innerHTML='<a href="#pedidos">Mis pedidos</a> '+(currentUser()?'<button id="server-signout" class="footer-link">Cerrar sesión</button>':'<a href="#acceso">Iniciar sesión</a>');$('#navigation').append(links);
+    if(!document.querySelector('[data-admin-link="devoluciones"]'))$('.admin-sidebar nav').insertAdjacentHTML('beforeend','<a href="#admin/devoluciones" data-admin-link="devoluciones">Devoluciones</a>');
+  }
+  window.addEventListener('bagstore-session-changed',()=>{updateSessionUI();});
+  colorSelect.addEventListener('change',()=>{if(integrated){activeColor=colorSelect.value;publicPage=1;void loadPublic();}});
+  editor.addEventListener('change',async event=>{
+    const input=event.target as HTMLInputElement;if(input.id!=='server-photo-upload'||!input.files?.[0])return;
+    const status=$('#server-photo-status');const submit=editor.querySelector<HTMLButtonElement>('button[type="submit"]')!;submit.disabled=true;
+    try{if(editor.querySelectorAll('.api-image-row').length>=10)throw Error('Puedes guardar hasta 10 imágenes.');const file=input.files[0];if(file.size>5*1024*1024)throw Error('La foto no puede superar 5 MB.');status.textContent='Subiendo foto…';const form=new FormData();form.append('file',file);const image=await client.request<ImageDTO>('/api/uploads',{method:'POST',body:form});image.orden=editor.querySelectorAll('.api-image-row').length+1;image.es_principal=image.orden===1;addImage(image);status.textContent='Foto subida al servidor.';}catch(e){status.textContent=errorText(e);}finally{input.value='';submit.disabled=!verifiedAdmin();}
+  });
+  editor.addEventListener('click',async event=>{
+    if((event.target as HTMLElement).closest('button')?.id!=='server-add-color')return;
+    const name=prompt('Nombre del nuevo color');if(!name)return;const tone=prompt('Tono hexadecimal, por ejemplo #CDB89E','#CDB89E');if(!tone)return;
+    try{const color=await client.request<{id:number}>('/api/colores',{method:'POST',body:JSON.stringify({nombre:name,tono:tone})});await loadColors();const select=$<HTMLSelectElement>('#api-color_id');select.replaceChildren(new Option('Sin especificar',''),...colors.map(c=>new Option(c.nombre,String(c.id))));select.value=String(color.id);}catch(e){$('#api-write-status').textContent=errorText(e);}
+  });
   void boot();
 }

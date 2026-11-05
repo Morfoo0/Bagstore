@@ -8,11 +8,14 @@ El usuario autorizó comenzar el desarrollo. La primera entrega es la base visua
 
 ## Estado de integración vigente
 
+El usuario autorizó integrar también backend y PostgreSQL. Estado vigente: docs/avance-11-backend-postgresql.md y backend/README.md. Backend integrado local en backend/, con PostgreSQL privado 55432, API 8001, VITE_INTEGRATED_BACKEND=1. Ya hay sesiones y permisos reales, escrituras y membresía de colecciones. Mantener protegidas .runtime, credenciales, fotografías y datos; jamás agregarlos a Git/Notion. Lo siguiente conserva el estado de la entrega 10 y se sustituye por esta entrega 11.
+
+
 Consultar docs/avance-10-adaptacion-api.md. Backend revisado en 5db5cc9. VITE_DATA_SOURCE separa api y demo. En API no poblar productos/stock locales ni permitir escrituras con roles inventados. Mantener bloqueada la edición de colecciones hasta recibir membresía administrativa completa. La cuenta de cliente y permisos reales no están implementados por el servidor. Ver docs/pendientes-backend-integracion.md.
 
 ## Tecnologías y responsabilidades
 - Frontend: HTML semántico, CSS y TypeScript. No introducir frameworks sin acordarlo.
-- Backend: Python, desarrollado por otro integrante. Base de datos: PostgreSQL.
+- Backend: Python/FastAPI integrado localmente por autorización del usuario, conservando la copia del equipo. Base de datos: PostgreSQL.
 - El navegador consume la API REST con fetch; no conecta directamente a PostgreSQL.
 - Separar componentes visuales, tipos, servicios de API y datos de ejemplo. Identificar claramente las simulaciones.
 - Colores y categorías usan catálogos compartidos con IDs estables (src/services/catalogs.ts). Evitar nombres libres y duplicados por mayúsculas, espacios o acentos. Los tonos de ilustración no sustituyen el color para filtros. Se agregan colores desde el formulario del producto y categorías desde su sección del panel.

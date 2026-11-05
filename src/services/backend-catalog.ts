@@ -1,11 +1,11 @@
 import { ApiClient, ApiError } from './api';
 export type State = 'activo' | 'inactivo';
 export interface CategoryDTO { id: number; nombre: string; slug: string; descripcion?: string | null; estado: State; orden: number; total_productos: number; }
-export interface CollectionDTO { id: number; nombre: string; slug: string; descripcion?: string | null; estado: State; imagen_portada_url?: string | null; total_productos: number; }
+export interface CollectionDTO { id: number; nombre: string; slug: string; descripcion?: string | null; estado: State; imagen_portada_url?: string | null; total_productos: number; producto_ids?: number[]; }
 export interface ImageDTO { url: string; texto_alternativo: string | null; orden: number; es_principal: boolean; }
-export interface ProductSummary { id: number; nombre: string; slug: string; precio: number; disponible: boolean; estado: State; categoria: {id: number; nombre: string; slug: string}; imagen_principal: ImageDTO | null; }
+export interface ProductSummary { id: number; nombre: string; slug: string; precio: number; disponible: boolean; estado: State; categoria: {id: number; nombre: string; slug: string}; imagen_principal: ImageDTO | null; color?: {id:number;nombre:string;tono:string}|null; }
 export interface ProductDTO extends ProductSummary { descripcion: string | null; sku: string; existencias: number; imagenes: ImageDTO[]; colecciones: {id: number; nombre: string; slug: string}[]; }
-export interface ProductWrite { nombre: string; descripcion: string | null; precio: number; sku?: string; categoria_id: number; existencias: number; estado: State; imagenes: ImageDTO[]; }
+export interface ProductWrite { color_id?: number|null; nombre: string; descripcion: string | null; precio: number; sku?: string; categoria_id: number; existencias: number; estado: State; imagenes: ImageDTO[]; }
 export interface CategoryWrite { nombre: string; descripcion: string | null; orden: number; estado: State; }
 export interface CollectionWrite { nombre: string; descripcion: string | null; estado: State; imagen_portada_url: string | null; producto_ids: number[]; }
 export interface Page<T> { datos: T[]; paginacion: {pagina: number; por_pagina: number; total: number; total_paginas: number}; }
@@ -47,7 +47,7 @@ export class BackendCatalog {
   saveProduct = async (value: ProductWrite, id?: number) => {
     if (!value.nombre.trim() || value.nombre.length > 150 || !Number.isFinite(value.precio) || value.precio <= 0 || value.precio > 999999.99 || Math.abs(value.precio * 100 - Math.round(value.precio * 100)) > 1e-6 || !positive(value.categoria_id) || !nonnegative(value.existencias) || value.existencias > 1000000 || !state(value.estado) || (value.descripcion?.length ?? 0) > 5000 || value.imagenes.length > 10 || !value.imagenes.every(image) || new Set(value.imagenes.map(i=>i.orden)).size !== value.imagenes.length || value.imagenes.filter(i=>i.es_principal).length > 1 || (id === undefined && !/^[A-Z0-9]+(?:-[A-Z0-9]+)*$/.test(value.sku ?? '')) || (value.sku !== undefined && (value.sku.length < 3 || value.sku.length > 50))) throw new ApiError('Revisa nombre, SKU, precio, categoría, existencias e imágenes.');
     // Lista blanca: nunca enviar colores locales, data URLs o campos derivados.
-    const body = {nombre:value.nombre.trim(), descripcion:value.descripcion, precio:value.precio, categoria_id:value.categoria_id, existencias:value.existencias, estado:value.estado, imagenes:value.imagenes, ...(id === undefined ? {sku:value.sku} : {})};
+    const body = {nombre:value.nombre.trim(), descripcion:value.descripcion, precio:value.precio, categoria_id:value.categoria_id, ...(value.color_id !== undefined ? {color_id:value.color_id} : {}), existencias:value.existencias, estado:value.estado, imagenes:value.imagenes, ...(id === undefined ? {sku:value.sku} : {})};
     return product(await this.client.request(`/api/productos${id === undefined ? '' : '/' + validId(id)}`, {method:id === undefined ? 'POST':'PUT', body:JSON.stringify(body)}));
   };
   saveCategory = async (v: CategoryWrite, id?: number) => checked(await this.client.request(`/api/categorias${id === undefined ? '' : '/' + validId(id)}`, {method:id === undefined?'POST':'PUT', body:JSON.stringify({nombre:v.nombre,descripcion:v.descripcion,orden:v.orden,estado:v.estado})}), category);

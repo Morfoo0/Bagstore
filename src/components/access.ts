@@ -1,7 +1,7 @@
 import type { CatalogRepository } from '../services/catalogs';
 import { products } from '../data/products';
 import { setupProductManager } from './product-manager';
-import { AuthNotConfiguredError, signIn, signUp, purchaseDestination } from '../services/auth';
+import { AuthNotConfiguredError, signIn, signUp, purchaseDestination, consumePurchaseDestination, isAdministrator } from '../services/auth';
 
 function node<T extends HTMLElement = HTMLElement>(selector: string): T {
   const result = document.querySelector<T>(selector);
@@ -42,6 +42,7 @@ export function setupAccess(catalogs: CatalogRepository, manageLocalProducts = t
     form.setAttribute('aria-busy', 'true');
     try {
       await signIn({ email: node<HTMLInputElement>('#access-email').value.trim(), password: password.value });
+      location.hash = consumePurchaseDestination() || (isAdministrator() ? '#admin' : '#pedidos');
     } catch (error) {
       feedback.textContent = error instanceof AuthNotConfiguredError ? error.message : 'No pudimos comprobar el acceso. Inténtalo más tarde.';
       feedback.hidden = false;
@@ -77,7 +78,7 @@ export function setupAccess(catalogs: CatalogRepository, manageLocalProducts = t
       registerFeedback.textContent = 'Las contraseñas no coinciden. Revisa ambos campos.'; registerFeedback.hidden = false; registerConfirm.focus(); return;
     }
     const button = node<HTMLButtonElement>('#register-submit'); button.disabled = true; button.textContent = 'Creando cuenta…'; registration.setAttribute('aria-busy', 'true');
-    try { await signUp({name: node<HTMLInputElement>('#register-name').value.trim(), email: node<HTMLInputElement>('#register-email').value.trim(), password: registerPassword.value}); }
+    try { await signUp({name: node<HTMLInputElement>('#register-name').value.trim(), email: node<HTMLInputElement>('#register-email').value.trim(), password: registerPassword.value}); location.hash=consumePurchaseDestination() || '#pedidos'; }
     catch (error) { registerFeedback.textContent = error instanceof AuthNotConfiguredError ? 'El registro aún no está disponible. Tu carrito se conserva; podrás continuar cuando habilitemos las cuentas.' : 'No pudimos crear tu cuenta. Inténtalo más tarde.'; registerFeedback.hidden = false; registerFeedback.focus(); }
     finally { clearRegistrationPasswords(); button.disabled = false; button.textContent = 'Crear cuenta'; registration.setAttribute('aria-busy', 'false'); }
   });
