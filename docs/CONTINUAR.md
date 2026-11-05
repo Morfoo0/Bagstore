@@ -1,5 +1,10 @@
 # Punto de continuidad — Bagstore
 
+## Publicación autorizada
+
+El usuario autorizó crear y subir la rama independiente proyecto-completo con la aplicación integrada. No tocar main ni backend. Esta instrucción sustituye la pausa histórica para esta entrega. La copia nueva requiere instalar dependencias y PostgreSQL; no requiere programar backend/frontend. Credenciales y datos locales excluidos.
+
+
 ## Preferencias vigentes
 
 - Proyecto escolar independiente de tienda de bolsas. No mezclar con FitTrack.

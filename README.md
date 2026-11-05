@@ -2,9 +2,23 @@
 
 Backend Python/FastAPI y PostgreSQL incluidos. Ver [inicio y acceso administrativo](backend/README.md). Ejecutar npm run dev:backend y npm run dev; abrir http://127.0.0.1:5173. npm run build permite también servir el frontend desde Python en puerto 8001. La cuenta administrativa se genera localmente, sin publicar su contraseña.
 
-Validación: 52 pruebas frontend, 11 pruebas PostgreSQL/backend (incluyen recorrido HTTP/DOM completo), compilación y respaldo verificado. Pagos manuales y guías existentes; servicios comerciales externos y publicación no configurados. GitHub pausado. [Entrega vigente](docs/avance-11-backend-postgresql.md).
+Validación: 52 pruebas frontend, 11 pruebas PostgreSQL/backend (incluyen recorrido HTTP/DOM completo), compilación y respaldo verificado. Pagos manuales y guías existentes; servicios comerciales externos y publicación no configurados. Entrega integrada en la rama independiente `proyecto-completo`. [Entrega vigente](docs/avance-11-backend-postgresql.md).
 
 ---
+
+## Ejecutar desde una copia nueva (Windows)
+
+Requiere Node.js, Python y PostgreSQL instalado; ver backend/README.md para la ruta de PostgreSQL.
+
+```powershell
+npm install
+Copy-Item .env.example .env.local
+npm run setup:backend
+npm run build
+npm run dev:backend
+```
+
+Abrir http://127.0.0.1:8001. Para desarrollo, ejecutar además npm run dev en otra terminal y usar el puerto 5173. La instalación genera una cuenta administrativa y su contraseña en un archivo privado local. No se distribuyen las contraseñas, fotos subidas ni datos de la base del autor; el esquema y el catálogo inicial están incluidos.
 
 ## Documentación histórica de frontend
 
