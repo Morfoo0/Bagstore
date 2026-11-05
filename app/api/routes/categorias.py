@@ -2,7 +2,11 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Response, status
 
-from app.api.deps import get_categoria_service, requiere_administrador
+from app.api.deps import (
+    get_categoria_service,
+    get_es_administrador,
+    requiere_administrador,
+)
 from app.core.config import settings
 from app.schemas.categoria import (
     CategoriaCreate,
@@ -24,8 +28,11 @@ router = APIRouter(prefix="/categorias", tags=["categorias"])
 def listar_categorias(
     filtros: Annotated[CategoriaFiltros, Query()],
     service: Annotated[CategoriaService, Depends(get_categoria_service)],
+    es_administrador: Annotated[bool, Depends(get_es_administrador)],
 ) -> CategoriaListaResponse:
-    return service.listar(filtros)
+    return service.listar(
+        filtros, es_administrador=es_administrador
+    )
 
 
 @router.get(
@@ -36,8 +43,11 @@ def listar_categorias(
 def obtener_categoria(
     categoria_id: Annotated[int, Path(gt=0)],
     service: Annotated[CategoriaService, Depends(get_categoria_service)],
+    es_administrador: Annotated[bool, Depends(get_es_administrador)],
 ) -> CategoriaResponse:
-    return service.obtener(categoria_id)
+    return service.obtener(
+        categoria_id, es_administrador=es_administrador
+    )
 
 
 @router.post(

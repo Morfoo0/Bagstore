@@ -1,10 +1,11 @@
 # BagStore API
 
-Backend de BagStore construido con Python, FastAPI y Pydantic. En esta fase no existe conexión a PostgreSQL: los productos, categorías y colecciones se almacenan temporalmente en memoria y los datos se pierden al reiniciar el servidor.
+Backend de BagStore construido con Python, FastAPI, SQLAlchemy y PostgreSQL. La autenticación usa sesiones opacas con tokens Bearer almacenados de forma segura. El catálogo de productos, categorías y colecciones ya se persiste en PostgreSQL.
 
 ## Requisitos
 
 - Python 3.12
+- PostgreSQL 15 o superior
 - Entorno virtual `.venv`
 
 ## Instalación
@@ -20,6 +21,56 @@ Si no existe `.env`, créalo a partir de `.env.example`:
 Copy-Item .env.example .env
 ```
 
+## Configuración
+
+Variables principales:
+
+```text
+DATABASE_URL=postgresql+psycopg://bagstore:bagstore@localhost:5432/bagstore
+DATABASE_ECHO=false
+SESSION_TTL_MINUTES=1440
+ADMIN_EMAIL=admin@bagstore.com
+ADMIN_PASSWORD=cambiar-en-desarrollo
+```
+
+### Crear la base de datos
+
+Ejemplo con `psql`:
+
+```sql
+CREATE USER bagstore WITH PASSWORD 'bagstore';
+CREATE DATABASE bagstore OWNER bagstore;
+```
+
+Ajusta usuario, contraseña, host y base de datos en `DATABASE_URL`.
+
+## Migraciones
+
+```powershell
+python -m alembic upgrade head
+```
+
+Para revertir la migración inicial:
+
+```powershell
+python -m alembic downgrade base
+```
+
+## Datos iniciales
+
+```powershell
+python -m app.scripts.seed
+```
+
+El seed carga:
+
+- 3 categorías.
+- 2 colecciones.
+- 10 productos con imágenes y relaciones.
+- Un administrador si `ADMIN_PASSWORD` está definida.
+
+El seed es idempotente: no duplica el catálogo si ya existen categorías.
+
 ## Ejecución
 
 ```powershell
@@ -32,61 +83,58 @@ python -m uvicorn app.main:app --reload
 - ReDoc: `http://127.0.0.1:8000/redoc`
 - OpenAPI JSON: `http://127.0.0.1:8000/openapi.json`
 
-## Pruebas
-
-```powershell
-python -m pytest
-```
-
-Las pruebas usan repositorios temporales aislados y limpian su estado antes y después de cada caso. No requieren PostgreSQL ni servicios externos.
-
-Para generar el reporte de cobertura:
-
-```powershell
-python -m pytest --cov=app --cov-report=term-missing
-```
-
-## Estructura
+## Autenticación
 
 ```text
-app/
-├── main.py
-├── api/
-│   ├── deps.py
-│   ├── router.py
-│   └── routes/
-│       ├── health.py
-│       ├── productos.py
-│       ├── categorias.py
-│       └── colecciones.py
-├── core/
-│   ├── config.py
-│   └── errors.py
-├── schemas/
-│   ├── common.py
-│   ├── errors.py
-│   ├── health.py
-│   ├── imagen.py
-│   ├── categoria.py
-│   ├── coleccion.py
-│   └── producto.py
-├── models/
-├── services/
-│   ├── productos.py
-│   ├── categorias.py
-│   └── colecciones.py
-└── repositories/
-    ├── categorias.py
-    ├── colecciones.py
-    └── productos.py
-tests/
-docs/api-contract.md
+POST /api/auth/registro
+POST /api/auth/login
+POST /api/auth/logout
+GET  /api/auth/sesion
 ```
+
+Registro:
+
+```powershell
+Invoke-RestMethod -Method Post `
+  -Uri "http://127.0.0.1:8000/api/auth/registro" `
+  -ContentType "application/json" `
+  -Body '{
+    "nombre": "Ana Pérez",
+    "email": "ana@bagstore.com",
+    "password": "una-contraseña-segura",
+    "telefono": "+5215512345678"
+  }'
+```
+
+Login:
+
+```powershell
+Invoke-RestMethod -Method Post `
+  -Uri "http://127.0.0.1:8000/api/auth/login" `
+  -ContentType "application/json" `
+  -Body '{
+    "email": "ana@bagstore.com",
+    "password": "una-contraseña-segura"
+  }'
+```
+
+La respuesta incluye `access_token`. Para las rutas protegidas:
+
+```http
+Authorization: Bearer <access_token>
+```
+
+Las escrituras de catálogo y las lecturas administrativas requieren rol `administrador`.
 
 ## Endpoints
 
 ```text
 GET    /api/health
+
+POST   /api/auth/registro
+POST   /api/auth/login
+POST   /api/auth/logout
+GET    /api/auth/sesion
 
 GET    /api/productos
 GET    /api/productos/{id}
@@ -107,131 +155,130 @@ PUT    /api/colecciones/{id}
 DELETE /api/colecciones/{id}
 ```
 
-### Categorías
+Los ejemplos de escritura omiten la cabecera `Authorization` por brevedad, pero es obligatoria.
 
-Listar categorías:
-
-```powershell
-Invoke-RestMethod "http://127.0.0.1:8000/api/categorias?estado=activo&pagina=1&por_pagina=20"
-```
-
-Crear categoría:
+## Pruebas
 
 ```powershell
-Invoke-RestMethod -Method Post `
-  -Uri "http://127.0.0.1:8000/api/categorias" `
-  -ContentType "application/json" `
-  -Body '{
-    "nombre": "Bandoleras",
-    "descripcion": "Bolsas bandolera.",
-    "estado": "activo",
-    "orden": 4
-  }'
+python -m pytest
 ```
 
-Reemplazar categoría:
+Por defecto las pruebas usan SQLite en memoria para ejecutarse sin un servidor PostgreSQL. La suite limpia y recrea el esquema antes de cada prueba.
+
+Para ejecutar también las pruebas de integración con PostgreSQL, usa una base de datos **dedicada** a pruebas:
 
 ```powershell
-Invoke-RestMethod -Method Put `
-  -Uri "http://127.0.0.1:8000/api/categorias/1" `
-  -ContentType "application/json" `
-  -Body '{
-    "nombre": "Cross Body Premium",
-    "descripcion": "Bolsas cross body premium.",
-    "estado": "activo",
-    "orden": 2
-  }'
+$env:TEST_DATABASE_URL="postgresql+psycopg://bagstore:bagstore@localhost:5432/bagstore_test"
+python -m pytest
 ```
 
-### Colecciones
+Advertencia: las pruebas de PostgreSQL destruyen y recrean las tablas de la base indicada. No uses la base de desarrollo.
 
-Listar colecciones:
+Cobertura:
 
 ```powershell
-Invoke-RestMethod "http://127.0.0.1:8000/api/colecciones?estado=activo&pagina=1&por_pagina=20"
+python -m pytest --cov=app --cov-report=term-missing
 ```
 
-Crear colección:
+## Estructura
 
-```powershell
-Invoke-RestMethod -Method Post `
-  -Uri "http://127.0.0.1:8000/api/colecciones" `
-  -ContentType "application/json" `
-  -Body '{
-    "nombre": "Verano",
-    "descripcion": "Selección de verano.",
-    "estado": "activo",
-    "producto_ids": [1, 3, 4]
-  }'
+```text
+app/
+├── main.py
+├── api/
+│   ├── deps.py
+│   ├── router.py
+│   └── routes/
+│       ├── health.py
+│       ├── auth.py
+│       ├── productos.py
+│       ├── categorias.py
+│       └── colecciones.py
+├── core/
+│   ├── config.py
+│   ├── database.py
+│   ├── enums.py
+│   ├── errors.py
+│   ├── security.py
+│   └── text.py
+├── models/
+│   ├── usuario.py
+│   ├── sesion.py
+│   ├── categoria.py
+│   ├── producto.py
+│   ├── imagen.py
+│   ├── coleccion.py
+│   └── producto_coleccion.py
+├── schemas/
+│   ├── auth.py
+│   ├── common.py
+│   ├── errors.py
+│   ├── health.py
+│   ├── imagen.py
+│   ├── categoria.py
+│   ├── coleccion.py
+│   └── producto.py
+├── services/
+│   ├── auth.py
+│   ├── productos.py
+│   ├── categorias.py
+│   └── colecciones.py
+├── repositories/
+│   ├── categorias.py
+│   ├── colecciones.py
+│   ├── productos.py
+│   ├── usuarios.py
+│   ├── sesiones.py
+│   └── sqlalchemy/
+│       ├── productos.py
+│       ├── categorias.py
+│       ├── colecciones.py
+│       ├── usuarios.py
+│       ├── sesiones.py
+│       └── mapeadores.py
+└── scripts/
+    └── seed.py
+alembic/
+tests/
+docs/
 ```
 
-Reemplazar membresía de una colección:
-
-```powershell
-Invoke-RestMethod -Method Put `
-  -Uri "http://127.0.0.1:8000/api/colecciones/1" `
-  -ContentType "application/json" `
-  -Body '{
-    "nombre": "La Colección",
-    "estado": "activo",
-    "producto_ids": [1, 2, 5]
-  }'
-```
-
-Obtener productos de una colección:
-
-```powershell
-Invoke-RestMethod "http://127.0.0.1:8000/api/productos?coleccion=la-coleccion&pagina=1&por_pagina=20"
-```
-
-## Datos iniciales
-
-- 10 productos distribuidos entre Tote Bags, Cross Body y Mini Bags.
-- Productos disponibles y agotados.
-- Productos activos e inactivos.
-- Productos con y sin imágenes.
-- 3 categorías: `tote-bags`, `cross-body` y `mini-bags`.
-- 2 colecciones: `la-coleccion` activa y `archivo` inactiva.
-
-## Relación producto-colección
-
-La única fuente canónica de la relación es `producto_ids` en `/api/colecciones`.
-
-- El producto expone `colecciones` como campo de solo lectura.
-- No existe `coleccion_ids` en las solicitudes de producto.
-- Los productos de una colección se consultan con `GET /api/productos?coleccion=...`.
-- El detalle de colección no incluye productos embebidos.
-- Eliminar una colección elimina únicamente sus asociaciones.
-- Eliminar un producto lo elimina de todas sus colecciones.
+Los repositorios en memoria de catálogo se conservan como referencia y utilidad de seed/pruebas. La API usa exclusivamente los repositorios SQLAlchemy.
 
 ## Reglas actuales de acceso
 
 - `GET` público solo devuelve productos, categorías y colecciones activas.
+- Un administrador autenticado puede consultar recursos inactivos y usar `estado=inactivo` o `estado=todos`.
+- Un cliente autenticado sigue viendo únicamente el catálogo público.
 - Los productos agotados siguen visibles si están activos, con `disponible=false`.
-- Los recursos inactivos devuelven `404` en el detalle público.
-- `estado=inactivo` y `estado=todos` devuelven `403` sin autenticación.
-- Las escrituras están temporalmente abiertas mediante una dependencia no-op. La autenticación se implementará en una fase posterior.
+- Los recursos inactivos devuelven `404` a visitantes y clientes.
+- Las escrituras requieren rol `administrador`.
+- Las sesiones expiran y pueden revocarse con logout.
+- Las contraseñas se almacenan con Argon2id.
 
 ## Alcance actual
 
-- Aplicación FastAPI con prefijo `/api`.
-- Health, Swagger, CORS configurable y errores normalizados.
-- Repositorios temporales de productos, categorías y colecciones.
-- Servicios con validaciones de negocio y conteos.
-- CRUD temporal de productos, categorías y colecciones.
-- Filtros, paginación y ordenamiento.
-- Borrado lógico de productos y borrado físico de categorías/colecciones.
-- Validación de dependencias y relaciones.
+- PostgreSQL con SQLAlchemy y Alembic.
+- Modelos de usuarios, sesiones, categorías, productos, imágenes y colecciones.
+- Persistencia real del catálogo.
+- Registro de clientes, login, logout y sesión activa.
+- Tokens Bearer opacos con hash en base de datos.
+- Roles `cliente` y `administrador`.
+- Protección de escrituras administrativas.
+- CRUD persistente de productos, categorías y colecciones.
+- Seed de datos iniciales.
+- Pruebas de API, servicios, repositorios, autenticación y persistencia.
 
-No se implementan todavía PostgreSQL, SQLAlchemy, migraciones, autenticación, pagos, carrito ni compras.
+No se implementan todavía pagos, pedidos, envíos ni devoluciones.
 
 ## Decisiones pendientes
 
-- Tipo definitivo de PK (entero o UUID).
-- Representación definitiva de precios y moneda en la base de datos.
-- Almacenamiento de imágenes y posible subida de archivos.
-- Estrategia definitiva de borrado lógico en PostgreSQL.
-- Generación y resolución de colisiones de slugs en la base de datos.
-- Índices y restricciones `UNIQUE` definitivas.
-- Implementación de autenticación y autorización del administrador.
-- Orígenes CORS definitivos del frontend.
+- Tipo definitivo de PK para el resto de módulos.
+- Moneda y representación definitiva de precios.
+- Almacenamiento externo de imágenes y subida de archivos.
+- Inventario basado en movimientos.
+- Jerarquía de categorías.
+- Orden de productos dentro de colecciones.
+- Recuperación de contraseña y verificación de correo.
+- Orígenes CORS definitivos.
+- Estrategia de migración para las fases de pedidos, pagos y envíos.

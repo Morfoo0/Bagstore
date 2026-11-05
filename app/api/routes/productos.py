@@ -2,7 +2,11 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Response, status
 
-from app.api.deps import get_producto_service, requiere_administrador
+from app.api.deps import (
+    get_es_administrador,
+    get_producto_service,
+    requiere_administrador,
+)
 from app.core.config import settings
 from app.schemas.producto import (
     ProductoCreate,
@@ -24,8 +28,11 @@ router = APIRouter(prefix="/productos", tags=["productos"])
 def listar_productos(
     filtros: Annotated[ProductoFiltros, Query()],
     service: Annotated[ProductoService, Depends(get_producto_service)],
+    es_administrador: Annotated[bool, Depends(get_es_administrador)],
 ) -> ProductoListaResponse:
-    return service.listar(filtros)
+    return service.listar(
+        filtros, es_administrador=es_administrador
+    )
 
 
 @router.get(
@@ -36,8 +43,11 @@ def listar_productos(
 def obtener_producto(
     producto_id: Annotated[int, Path(gt=0)],
     service: Annotated[ProductoService, Depends(get_producto_service)],
+    es_administrador: Annotated[bool, Depends(get_es_administrador)],
 ) -> ProductoResponse:
-    return service.obtener(producto_id)
+    return service.obtener(
+        producto_id, es_administrador=es_administrador
+    )
 
 
 @router.post(

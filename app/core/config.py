@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import field_validator, model_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,6 +17,13 @@ class Settings(BaseSettings):
     api_description: str = "API de catálogo de BagStore."
     environment: str = "development"
     debug: bool = False
+    database_url: str = (
+        "postgresql+psycopg://bagstore:bagstore@localhost:5432/bagstore"
+    )
+    database_echo: bool = False
+    session_ttl_minutes: int = Field(default=1440, gt=0)
+    admin_email: str = "admin@bagstore.com"
+    admin_password: str | None = None
     api_prefix: str = "/api"
     docs_url: str = "/docs"
     redoc_url: str = "/redoc"
