@@ -38,6 +38,14 @@ python -m uvicorn app.main:app --reload
 python -m pytest
 ```
 
+Las pruebas usan repositorios temporales aislados y limpian su estado antes y después de cada caso. No requieren PostgreSQL ni servicios externos.
+
+Para generar el reporte de cobertura:
+
+```powershell
+python -m pytest --cov=app --cov-report=term-missing
+```
+
 ## Estructura
 
 ```text

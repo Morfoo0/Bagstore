@@ -126,3 +126,31 @@ def test_cambiar_estado_producto_actualiza_conteo_categoria(
 
     categoria = client.get("/api/categorias/2").json()
     assert categoria["total_productos"] == 3
+
+
+def test_cambiar_estado_producto_actualiza_conteo_coleccion(
+    client: TestClient,
+) -> None:
+    assert client.put(
+        "/api/colecciones/1",
+        json={
+            "nombre": "La Colección",
+            "estado": "activo",
+            "producto_ids": [1, 2],
+        },
+    ).status_code == 200
+
+    assert client.put(
+        "/api/productos/2",
+        json={
+            "nombre": "Tote Bag Oliva",
+            "precio": "749.00",
+            "categoria_id": 2,
+            "existencias": 0,
+            "imagenes": [],
+            "estado": "inactivo",
+        },
+    ).status_code == 200
+
+    coleccion = client.get("/api/colecciones/1").json()
+    assert coleccion["total_productos"] == 1

@@ -160,3 +160,139 @@ def test_openapi_incluye_endpoints_de_categorias(
     assert {"get", "put", "delete"} <= set(
         paths["/api/categorias/{categoria_id}"]
     )
+
+
+def test_obtener_categoria_inexistente(client: TestClient) -> None:
+    response = client.get("/api/categorias/999")
+
+    assert response.status_code == 404
+    assert response.json()["error"]["codigo"] == "RECURSO_NO_ENCONTRADO"
+
+
+def test_actualizar_categoria_inexistente(client: TestClient) -> None:
+    response = client.put(
+        "/api/categorias/999",
+        json={"nombre": "Inexistente", "estado": "activo"},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["error"]["codigo"] == "RECURSO_NO_ENCONTRADO"
+
+
+def test_eliminar_categoria_inexistente(client: TestClient) -> None:
+    response = client.delete("/api/categorias/999")
+
+    assert response.status_code == 404
+    assert response.json()["error"]["codigo"] == "RECURSO_NO_ENCONTRADO"
+
+
+def test_paginacion_de_categorias(client: TestClient) -> None:
+    response = client.get(
+        "/api/categorias",
+        params={"pagina": 2, "por_pagina": 1},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert [categoria["id"] for categoria in body["datos"]] == [1]
+    assert body["paginacion"] == {
+        "pagina": 2,
+        "por_pagina": 1,
+        "total": 3,
+        "total_paginas": 3,
+    }
+
+
+def test_categoria_inactiva_no_es_visible_publicamente(
+    client: TestClient,
+) -> None:
+    creada = client.post(
+        "/api/categorias",
+        json={"nombre": "Archivada", "estado": "inactivo"},
+    )
+    categoria_id = creada.json()["id"]
+
+    detalle = client.get(f"/api/categorias/{categoria_id}")
+    listado = client.get("/api/categorias").json()
+
+    assert creada.status_code == 201
+    assert detalle.status_code == 404
+    assert categoria_id not in [
+        categoria["id"] for categoria in listado["datos"]
+    ]
+
+
+def test_actualizar_categoria_rechaza_slug_duplicado(
+    client: TestClient,
+) -> None:
+    response = client.put(
+        "/api/categorias/1",
+        json={
+            "nombre": "Cross Body",
+            "slug": "tote-bags",
+            "estado": "activo",
+        },
+    )
+
+    assert response.status_code == 409
+    assert response.json()["error"]["detalles"][0]["campo"] == "slug"
+
+
+def test_crear_categoria_rechaza_orden_negativo(
+    client: TestClient,
+) -> None:
+    response = client.post(
+        "/api/categorias",
+        json={"nombre": "Orden inválido", "orden": -1},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["detalles"][0]["campo"] == "orden"
+
+
+def test_crear_categoria_rechaza_campos_desconocidos(
+    client: TestClient,
+) -> None:
+    response = client.post(
+        "/api/categorias",
+        json={"nombre": "Con extra", "campo_extra": "no permitido"},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["detalles"][0]["campo"] == "campo_extra"
+
+
+def test_crear_categoria_con_slug_explicito(client: TestClient) -> None:
+    response = client.post(
+        "/api/categorias",
+        json={"nombre": "Bandoleras", "slug": "bandoleras-premium"},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["slug"] == "bandoleras-premium"
+
+
+def test_actualizar_categoria_con_slug_nuevo(client: TestClient) -> None:
+    response = client.put(
+        "/api/categorias/1",
+        json={
+            "nombre": "Cross Body",
+            "slug": "cross-body-premium",
+            "estado": "activo",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["slug"] == "cross-body-premium"
+
+
+def test_crear_categoria_rechaza_slug_no_generable(
+    client: TestClient,
+) -> None:
+    response = client.post(
+        "/api/categorias",
+        json={"nombre": "!!"},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["detalles"][0]["campo"] == "slug"

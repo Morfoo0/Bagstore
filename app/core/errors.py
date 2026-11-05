@@ -116,6 +116,13 @@ async def _manejar_error_validacion(
 async def _manejar_http_exception(
     request: Request, exc: StarletteHTTPException
 ) -> JSONResponse:
+    if exc.status_code >= 500:
+        return _respuesta_error(
+            status_code=exc.status_code,
+            codigo=CodigoError.ERROR_INTERNO,
+            mensaje=MENSAJES_POR_ESTADO[500],
+        )
+
     if isinstance(exc.detail, dict) and "error" in exc.detail:
         return JSONResponse(status_code=exc.status_code, content=exc.detail)
 
