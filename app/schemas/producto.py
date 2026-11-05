@@ -128,6 +128,19 @@ class ProductoResponse(TimestampsResponse):
         return serializar_precio(valor)
 
 
+class ProductoEstadoUpdate(RequestSchema):
+    estado: Estado
+
+
+class ProductosDeColeccionFiltros(RequestSchema):
+    nombre: str | None = None
+    disponible: bool | None = None
+    estado: EstadoFiltro = EstadoFiltro.TODOS
+    pagina: int = Field(default=1, ge=1)
+    por_pagina: int = Field(default=20, ge=1, le=100)
+    orden: OrdenProducto = OrdenProducto.RECIENTE
+
+
 class ProductoFiltros(RequestSchema):
     categoria: SlugOpcional = None
     categoria_id: int | None = Field(default=None, gt=0)
@@ -135,6 +148,7 @@ class ProductoFiltros(RequestSchema):
     disponible: bool | None = None
     coleccion: SlugOpcional = None
     coleccion_id: int | None = Field(default=None, gt=0)
+    color_id: int | None = Field(default=None, gt=0)
     estado: EstadoFiltro = EstadoFiltro.ACTIVO
     pagina: int = Field(default=1, ge=1)
     por_pagina: int = Field(default=20, ge=1, le=100)

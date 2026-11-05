@@ -1,8 +1,10 @@
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.api.router import api_router
 from app.core.config import settings
@@ -43,6 +45,15 @@ def create_app() -> FastAPI:
     )
 
     register_exception_handlers(app)
+
+    directorio_media = Path(settings.upload_dir)
+    directorio_media.mkdir(parents=True, exist_ok=True)
+    app.mount(
+        "/media",
+        StaticFiles(directory=directorio_media),
+        name="media",
+    )
+
     app.include_router(api_router, prefix=settings.api_prefix)
 
     return app

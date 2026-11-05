@@ -17,6 +17,7 @@ CODIGOS_POR_ESTADO = {
     403: CodigoError.ACCESO_DENEGADO,
     404: CodigoError.RECURSO_NO_ENCONTRADO,
     409: CodigoError.CONFLICTO_DEPENDENCIAS,
+    413: CodigoError.ARCHIVO_DEMASIADO_GRANDE,
     422: CodigoError.VALIDACION_FALLIDA,
     500: CodigoError.ERROR_INTERNO,
 }
@@ -27,6 +28,7 @@ MENSAJES_POR_ESTADO = {
     403: "Se requiere el rol administrador para realizar esta operación.",
     404: "No se encontró el recurso solicitado.",
     409: "La solicitud entra en conflicto con el estado actual del recurso.",
+    413: "El archivo supera el tamaño máximo permitido.",
     422: "Los datos enviados no son válidos.",
     500: "Ocurrió un error inesperado.",
 }

@@ -8,11 +8,16 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.core.enums import RolUsuario
 from app.core.errors import AppError
+from app.core.storage import AlmacenamientoLocal
 from app.repositories.sqlalchemy.categorias import (
     CategoriaRepositorioSQLAlchemy,
 )
+from app.repositories.sqlalchemy.colores import ColorRepositorioSQLAlchemy
 from app.repositories.sqlalchemy.colecciones import (
     ColeccionRepositorioSQLAlchemy,
+)
+from app.repositories.sqlalchemy.imagenes import (
+    ImagenProductoRepositorioSQLAlchemy,
 )
 from app.repositories.sqlalchemy.productos import (
     ProductoRepositorioSQLAlchemy,
@@ -23,7 +28,9 @@ from app.schemas.auth import UsuarioPublico
 from app.schemas.errors import CodigoError
 from app.services.auth import AuthService, SesionActual
 from app.services.categorias import CategoriaService
+from app.services.colores import ColorService
 from app.services.colecciones import ColeccionService
+from app.services.imagenes import ImagenProductoService
 from app.services.productos import ProductoService
 
 _bearer = HTTPBearer(auto_error=False)
@@ -36,6 +43,7 @@ def get_producto_service(
         ProductoRepositorioSQLAlchemy(db),
         CategoriaRepositorioSQLAlchemy(db),
         ColeccionRepositorioSQLAlchemy(db),
+        ColorRepositorioSQLAlchemy(db),
     )
 
 
@@ -54,6 +62,36 @@ def get_coleccion_service(
     return ColeccionService(
         ColeccionRepositorioSQLAlchemy(db),
         ProductoRepositorioSQLAlchemy(db),
+    )
+
+
+def get_color_service(
+    db: Annotated[Session, Depends(get_db)],
+) -> ColorService:
+    return ColorService(
+        ColorRepositorioSQLAlchemy(db),
+        ProductoRepositorioSQLAlchemy(db),
+    )
+
+
+def get_almacenamiento() -> AlmacenamientoLocal:
+    return AlmacenamientoLocal(
+        settings.upload_dir,
+        settings.media_base_url,
+    )
+
+
+def get_imagen_service(
+    db: Annotated[Session, Depends(get_db)],
+    almacenamiento: Annotated[
+        AlmacenamientoLocal, Depends(get_almacenamiento)
+    ],
+) -> ImagenProductoService:
+    return ImagenProductoService(
+        ProductoRepositorioSQLAlchemy(db),
+        ImagenProductoRepositorioSQLAlchemy(db),
+        almacenamiento,
+        settings.max_image_size_bytes,
     )
 
 

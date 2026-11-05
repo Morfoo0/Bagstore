@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     session_ttl_minutes: int = Field(default=1440, gt=0)
     admin_email: str = "admin@bagstore.com"
     admin_password: str | None = None
+    upload_dir: str = "uploads"
+    media_base_url: str = "http://localhost:8000/media"
+    max_image_size_bytes: int = Field(default=5_242_880, gt=0)
     api_prefix: str = "/api"
     docs_url: str = "/docs"
     redoc_url: str = "/redoc"

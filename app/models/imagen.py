@@ -30,6 +30,9 @@ class ImagenProducto(Base):
         index=True,
     )
     url: Mapped[str] = mapped_column(String(500), nullable=False)
+    storage_key: Mapped[str | None] = mapped_column(
+        String(500), nullable=True
+    )
     texto_alternativo: Mapped[str | None] = mapped_column(
         String(150), nullable=True
     )

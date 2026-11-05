@@ -4,6 +4,7 @@ from app.schemas.common import (
     MAX_IMAGENES,
     RequestSchema,
     ResponseSchema,
+    TimestampsResponse,
     UrlHttp,
 )
 
@@ -15,7 +16,22 @@ class ImagenCreate(RequestSchema):
     es_principal: bool = False
 
 
+class ImagenUpdate(RequestSchema):
+    texto_alternativo: str | None = Field(default=None, max_length=150)
+    orden: int = Field(ge=0)
+    es_principal: bool
+
+
 class ImagenResponse(ResponseSchema):
+    url: str = Field(min_length=1, max_length=500)
+    texto_alternativo: str | None = Field(default=None, max_length=150)
+    orden: int = Field(ge=0)
+    es_principal: bool
+
+
+class ImagenProductoResponse(TimestampsResponse):
+    id: int = Field(gt=0)
+    producto_id: int = Field(gt=0)
     url: str = Field(min_length=1, max_length=500)
     texto_alternativo: str | None = Field(default=None, max_length=150)
     orden: int = Field(ge=0)

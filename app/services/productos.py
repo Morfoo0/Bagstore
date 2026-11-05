@@ -1,6 +1,7 @@
 from app.core.errors import AppError
 from app.repositories.categorias import CategoriaRepositorioMemoria
 from app.repositories.colecciones import ColeccionRepositorioMemoria
+from app.repositories.sqlalchemy.colores import ColorRepositorioSQLAlchemy
 from app.repositories.productos import (
     ImagenAlmacenada,
     ProductoAlmacenado,
@@ -25,6 +26,7 @@ from app.schemas.producto import (
     ProductoListaResponse,
     ProductoResumen,
     ProductoResponse,
+    ProductosDeColeccionFiltros,
     ProductoUpdate,
 )
 
@@ -35,10 +37,12 @@ class ProductoService:
         productos: ProductoRepositorioMemoria,
         categorias: CategoriaRepositorioMemoria,
         colecciones: ColeccionRepositorioMemoria,
+        colores: ColorRepositorioSQLAlchemy | None = None,
     ) -> None:
         self._productos = productos
         self._categorias = categorias
         self._colecciones = colecciones
+        self._colores = colores
 
     def listar(
         self,
@@ -73,6 +77,11 @@ class ProductoService:
         if not coleccion_valida:
             return self._respuesta_vacia(filtros)
 
+        color_ids, color_valido = self._resolver_color(filtros)
+        if not color_valido:
+            return self._respuesta_vacia(filtros)
+        producto_ids = self._combinar_ids(producto_ids, color_ids)
+
         consulta = ProductoConsulta(
             categoria_id=categoria_id,
             producto_ids=producto_ids,
@@ -105,6 +114,32 @@ class ProductoService:
                 total=total,
                 total_paginas=total_paginas,
             ),
+        )
+
+    def listar_por_coleccion(
+        self,
+        coleccion_id: int,
+        filtros: ProductosDeColeccionFiltros,
+        es_administrador: bool = True,
+    ) -> ProductoListaResponse:
+        coleccion = self._colecciones.obtener_por_id(coleccion_id)
+        if coleccion is None:
+            raise self._error_coleccion_no_encontrada(coleccion_id)
+        if not es_administrador and coleccion.estado != Estado.ACTIVO:
+            raise self._error_coleccion_no_encontrada(coleccion_id)
+
+        filtros_producto = ProductoFiltros(
+            coleccion_id=coleccion_id,
+            nombre=filtros.nombre or None,
+            disponible=filtros.disponible,
+            estado=filtros.estado,
+            pagina=filtros.pagina,
+            por_pagina=filtros.por_pagina,
+            orden=filtros.orden,
+        )
+        return self.listar(
+            filtros_producto,
+            es_administrador=es_administrador,
         )
 
     def obtener(
@@ -220,6 +255,31 @@ class ProductoService:
         )
         return self._a_detalle(producto, es_administrador=False)
 
+    def cambiar_estado(
+        self, producto_id: int, estado: Estado
+    ) -> ProductoResponse:
+        producto = self._productos.obtener_por_id(producto_id)
+        if producto is None:
+            raise self._error_no_encontrado(producto_id)
+        if estado == Estado.ACTIVO:
+            categoria = self._categorias.obtener_por_id(
+                producto.categoria_id
+            )
+            if categoria is None:
+                raise self._error_validacion(
+                    "categoria_id",
+                    "La categoría indicada no existe.",
+                )
+            if categoria.estado != Estado.ACTIVO:
+                raise self._error_validacion(
+                    "categoria_id",
+                    "La categoría está inactiva y el producto no puede estar activo.",
+                )
+        actualizado = self._productos.actualizar_estado(
+            producto_id, estado
+        )
+        return self._a_detalle(actualizado, es_administrador=True)
+
     def eliminar(self, producto_id: int) -> None:
         if not self._productos.eliminar_logico(producto_id):
             raise self._error_no_encontrado(producto_id)
@@ -260,6 +320,33 @@ class ProductoService:
         if not es_administrador and coleccion.estado != Estado.ACTIVO:
             return None, False
         return frozenset(coleccion.producto_ids), True
+
+    def _resolver_color(
+        self,
+        filtros: ProductoFiltros,
+    ) -> tuple[frozenset[int] | None, bool]:
+        if filtros.color_id is None:
+            return None, True
+        if self._colores is None:
+            return None, False
+        color = self._colores.obtener_por_id(filtros.color_id)
+        if color is None:
+            return None, False
+        return frozenset(color.producto_ids), True
+
+    def _combinar_ids(
+        self,
+        *conjuntos: frozenset[int] | None,
+    ) -> frozenset[int] | None:
+        presentes = [
+            conjunto for conjunto in conjuntos if conjunto is not None
+        ]
+        if not presentes:
+            return None
+        resultado = presentes[0]
+        for conjunto in presentes[1:]:
+            resultado = resultado & conjunto
+        return frozenset(resultado)
 
     def _generar_slug(self, nombre: str) -> str:
         base = normalizar_slug(nombre)
@@ -398,6 +485,15 @@ class ProductoService:
             404,
             CodigoError.RECURSO_NO_ENCONTRADO,
             f"No existe un producto con id {producto_id}.",
+        )
+
+    def _error_coleccion_no_encontrada(
+        self, coleccion_id: int
+    ) -> AppError:
+        return AppError(
+            404,
+            CodigoError.RECURSO_NO_ENCONTRADO,
+            f"No existe una colección con id {coleccion_id}.",
         )
 
     def _error_validacion(self, campo: str, mensaje: str) -> AppError:

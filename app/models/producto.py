@@ -15,6 +15,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 from app.models.producto_coleccion import producto_coleccion
+from app.models.producto_color import producto_color
 from app.schemas.common import Estado
 
 
@@ -75,5 +76,10 @@ class Producto(Base):
     colecciones = relationship(
         "Coleccion",
         secondary=producto_coleccion,
+        back_populates="productos",
+    )
+    colores = relationship(
+        "Color",
+        secondary=producto_color,
         back_populates="productos",
     )

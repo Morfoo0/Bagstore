@@ -79,4 +79,11 @@ class ColeccionFiltros(RequestSchema):
     por_pagina: int = Field(default=20, ge=1, le=100)
 
 
+class ColeccionAdminFiltros(RequestSchema):
+    nombre: str | None = None
+    estado: EstadoFiltro = EstadoFiltro.TODOS
+    pagina: int = Field(default=1, ge=1)
+    por_pagina: int = Field(default=20, ge=1, le=100)
+
+
 ColeccionListaResponse = RespuestaLista[ColeccionResponse]

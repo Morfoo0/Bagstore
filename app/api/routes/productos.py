@@ -3,11 +3,16 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Path, Query, Response, status
 
 from app.api.deps import (
+    get_color_service,
     get_es_administrador,
     get_producto_service,
     requiere_administrador,
 )
 from app.core.config import settings
+from app.schemas.color import (
+    ColoresProductoResponse,
+    ProductoColoresUpdate,
+)
 from app.schemas.producto import (
     ProductoCreate,
     ProductoFiltros,
@@ -15,6 +20,7 @@ from app.schemas.producto import (
     ProductoResponse,
     ProductoUpdate,
 )
+from app.services.colores import ColorService
 from app.services.productos import ProductoService
 
 router = APIRouter(prefix="/productos", tags=["productos"])
@@ -48,6 +54,35 @@ def obtener_producto(
     return service.obtener(
         producto_id, es_administrador=es_administrador
     )
+
+
+@router.get(
+    "/{producto_id}/colores",
+    response_model=ColoresProductoResponse,
+    summary="Obtener colores de un producto",
+)
+def obtener_colores_producto(
+    producto_id: Annotated[int, Path(gt=0)],
+    service: Annotated[ColorService, Depends(get_color_service)],
+    es_administrador: Annotated[bool, Depends(get_es_administrador)],
+) -> ColoresProductoResponse:
+    return service.listar_por_producto(
+        producto_id, es_administrador=es_administrador
+    )
+
+
+@router.put(
+    "/{producto_id}/colores",
+    response_model=ColoresProductoResponse,
+    dependencies=[Depends(requiere_administrador)],
+    summary="Reemplazar colores de un producto",
+)
+def reemplazar_colores_producto(
+    producto_id: Annotated[int, Path(gt=0)],
+    datos: ProductoColoresUpdate,
+    service: Annotated[ColorService, Depends(get_color_service)],
+) -> ColoresProductoResponse:
+    return service.reemplazar_producto(producto_id, datos)
 
 
 @router.post(

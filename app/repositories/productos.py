@@ -393,6 +393,20 @@ class ProductoRepositorioMemoria:
         self._productos[producto_id] = actualizado
         return actualizado
 
+    def actualizar_estado(
+        self, producto_id: int, estado: Estado
+    ) -> ProductoAlmacenado:
+        actual = self.obtener_por_id(producto_id)
+        if actual is None:
+            raise KeyError(producto_id)
+        actualizado = replace(
+            actual,
+            estado=estado,
+            actualizado_en=datetime.now(timezone.utc),
+        )
+        self._productos[producto_id] = actualizado
+        return actualizado
+
     def eliminar_logico(self, producto_id: int) -> bool:
         actual = self.obtener_por_id(producto_id)
         if actual is None:

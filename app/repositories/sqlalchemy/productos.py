@@ -130,6 +130,25 @@ class ProductoRepositorioSQLAlchemy:
         self._session.flush()
         return producto_a_entidad(producto)
 
+    def actualizar_estado(
+        self, producto_id: int, estado: Estado
+    ) -> ProductoAlmacenado:
+        stmt = (
+            select(Producto)
+            .where(
+                Producto.id == producto_id,
+                Producto.eliminado_en.is_(None),
+            )
+            .options(selectinload(Producto.imagenes))
+        )
+        producto = self._session.scalars(stmt).first()
+        if producto is None:
+            raise KeyError(producto_id)
+        producto.estado = estado
+        producto.actualizado_en = _ahora()
+        self._session.flush()
+        return producto_a_entidad(producto)
+
     def eliminar_logico(self, producto_id: int) -> bool:
         stmt = select(Producto).where(
             Producto.id == producto_id,

@@ -1,4 +1,8 @@
 import os
+import shutil
+import tempfile
+
+UPLOAD_DIR = tempfile.mkdtemp(prefix="bagstore_uploads_")
 
 os.environ["DATABASE_URL"] = (
     os.getenv("TEST_DATABASE_URL")
@@ -6,6 +10,9 @@ os.environ["DATABASE_URL"] = (
 )
 os.environ["DATABASE_ECHO"] = "false"
 os.environ["SESSION_TTL_MINUTES"] = "60"
+os.environ["UPLOAD_DIR"] = UPLOAD_DIR
+os.environ["MEDIA_BASE_URL"] = "http://testserver/media"
+os.environ["MAX_IMAGE_SIZE_BYTES"] = "10000"
 
 import pytest
 from fastapi.testclient import TestClient
@@ -20,6 +27,12 @@ from app.scripts.seed import crear_admin, seed_catalogo
 ADMIN_EMAIL = "admin@bagstore.com"
 ADMIN_PASSWORD = "admin-test-123"
 CLIENTE_PASSWORD = "cliente-test-123"
+
+
+@pytest.fixture(scope="session", autouse=True)
+def limpiar_uploads() -> None:
+    yield
+    shutil.rmtree(UPLOAD_DIR, ignore_errors=True)
 
 
 @pytest.fixture
