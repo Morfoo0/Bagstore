@@ -25,4 +25,3 @@ def test_database():
     with TestClient(app) as c: assert c.get('/api/health').json()['database']=='PostgreSQL'
     yield
     with psycopg.connect(server_url,autocommit=True,connect_timeout=5) as db: db.execute(sql.SQL('DROP DATABASE {} WITH (FORCE)').format(sql.Identifier(TEST_DB)))
-
