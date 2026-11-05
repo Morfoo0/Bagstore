@@ -2,6 +2,8 @@
 
 ## Publicación autorizada
 
+Estado: rama local proyecto-completo creada con toda la aplicación y guía de instalación. No se publicó aún. git push falló por acceso denegado al gestor de credenciales y la conexión GitHub rechazó crear el árbol con 403 Resource not accessible by integration. Se verificaron los 73 archivos rastreados sin datos privados ni claves. Para completar: autorizar escritura en la conexión o ejecutar git push -u origin proyecto-completo desde la terminal del usuario, dentro de esta carpeta. No se creó rama remota ni se alteraron main/backend/basededatos.
+
 El usuario autorizó crear y subir la rama independiente proyecto-completo con la aplicación integrada. No tocar main ni backend. Esta instrucción sustituye la pausa histórica para esta entrega. La copia nueva requiere instalar dependencias y PostgreSQL; no requiere programar backend/frontend. Credenciales y datos locales excluidos.
 
 
