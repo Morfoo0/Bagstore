@@ -1,3 +1,5 @@
+> Estado vigente: **entrega 10 — frontend adaptado a API**. Copiar .env.example a .env.local y ejecutar Python en puerto 8000 junto a npm run dev. El modo api usa el catálogo del servidor y mantiene las escrituras bloqueadas hasta disponer de autenticación real. Para el prototipo independiente usar VITE_DATA_SOURCE=demo. No hay fallback automático a datos ficticios. Ver [adaptación](docs/avance-10-adaptacion-api.md) y [pendientes de backend](docs/pendientes-backend-integracion.md). Validación: npm test (52 pruebas), npm run build y npm run check:backend (requiere ambos servidores).
+
 > Estado vigente: entrega 6. Panel y tienda comparten productos locales. Detalle, colecciones, inventario, reportes, reseñas, compartir, devoluciones y compra de prueba implementados. API real, sesión/roles y revisión visual nueva pendientes. Consultar docs/avance-06-recorridos-frontend.md y docs/contrato-api-propuesto.md. GitHub continúa pausado.
 
 # Tienda de bolsas escolar

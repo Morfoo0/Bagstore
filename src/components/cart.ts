@@ -12,14 +12,14 @@ function element<T extends HTMLElement = HTMLElement>(selector: string): T {
   return node;
 }
 
-export function createCart(notify: (message: string) => void, commerce: CommerceRepository) {
+export function createCart(notify: (message: string) => void, commerce: CommerceRepository, storageKey = STORAGE_KEY) {
   const items = new Map<number, number>();
   let gift = false;
   let coupon = false;
   let couponMessage = '';
   let storageAvailable = true;
   try {
-    const saved: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]');
+    const saved: unknown = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
     if (Array.isArray(saved)) for (const entry of saved) {
       if (Array.isArray(entry) && entry.length === 2 && products.some(p => p.id === entry[0]) && Number.isInteger(entry[1]) && entry[1] > 0 && entry[1] <= 10) items.set(entry[0], entry[1]);
     }
@@ -31,7 +31,7 @@ export function createCart(notify: (message: string) => void, commerce: Commerce
     return { subtotal, discount, total: subtotal - discount, count: [...items.values()].reduce((sum, qty) => sum + qty, 0) };
   }
   function save() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify([...items])); }
+    try { localStorage.setItem(storageKey, JSON.stringify([...items])); }
     catch { storageAvailable = false; }
   }
   function render() {

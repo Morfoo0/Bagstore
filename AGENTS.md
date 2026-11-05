@@ -6,6 +6,10 @@ Actúa como asistente de desarrollo y tutor del frontend. Explica en español qu
 Al retomar, leer docs/CONTINUAR.md: contiene el punto de continuidad y el siguiente paso acordado.
 El usuario autorizó comenzar el desarrollo. La primera entrega es la base visual pública con catálogo y carrito de demostración; consultar docs/avance-01.md antes de continuar.
 
+## Estado de integración vigente
+
+Consultar docs/avance-10-adaptacion-api.md. Backend revisado en 5db5cc9. VITE_DATA_SOURCE separa api y demo. En API no poblar productos/stock locales ni permitir escrituras con roles inventados. Mantener bloqueada la edición de colecciones hasta recibir membresía administrativa completa. La cuenta de cliente y permisos reales no están implementados por el servidor. Ver docs/pendientes-backend-integracion.md.
+
 ## Tecnologías y responsabilidades
 - Frontend: HTML semántico, CSS y TypeScript. No introducir frameworks sin acordarlo.
 - Backend: Python, desarrollado por otro integrante. Base de datos: PostgreSQL.

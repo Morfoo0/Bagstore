@@ -1,3 +1,5 @@
+> Actualización vigente: ya se revisó y adaptó el catálogo de backend 5db5cc9. Consultar docs/avance-10-adaptacion-api.md y docs/pendientes-backend-integracion.md. Las propuestas de recursos restantes de este documento no son endpoints existentes. Configuración actual en .env.example: modo API y proxy Vite /api; no depender solo de la comprobación de salud.
+
 # Integración de API — propuesta por acordar
 
 El frontend sigue en demostración local. No se han confirmado rutas, modelos JSON ni mecanismo de autenticación con el equipo de Python. Esta propuesta no obliga al backend a implementar nombres concretos.

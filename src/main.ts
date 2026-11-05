@@ -12,6 +12,12 @@ import { bagArt } from './components/bag';
 import type { Category } from './types/product';
 import { createCatalogRepository, baseCategories, legacyColorId, normalizedName } from './services/catalogs';
 
+import { setupBackendApp } from './components/backend-app';
+
+const runtime = (import.meta as ImportMeta & {env: Record<string,string|undefined>}).env;
+if (runtime.VITE_DATA_SOURCE === 'api') {
+  setupBackendApp(runtime.VITE_API_BASE_URL || window.location.origin);
+} else {
 function el<T extends HTMLElement>(selector: string): T {
   const result = document.querySelector<T>(selector);
   if (!result) throw new Error(`Elemento requerido no encontrado: ${selector}`);
@@ -120,3 +126,5 @@ setupAccess(catalogs);
 const shoppingCart = createCart(notify, commerce);
 setupFeatures(commerce, catalogs, shoppingCart, notify);
 renderCatalogOptions();
+
+}

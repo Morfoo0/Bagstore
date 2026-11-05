@@ -8,7 +8,17 @@
 - Cada integrante trabaja en su propia base y rama. Nuestra rama: frontend-bafar. No crear main para continuar.
 - No ejecutar push ni publicar PR hasta nueva instrucción expresa del usuario. Se permiten commits locales.
 
-## Estado vigente — entrega 9
+## Estado vigente — entrega 10: API
+
+Frontend adaptado al backend 5db5cc94dad8ec70c966bdc566d13754ab9278f2. .env.local activa VITE_DATA_SOURCE=api con proxy /api a Python en 8000. Catálogo, detalle, categorías y colecciones consultan servidor; carrito API independiente. Formularios y PUT preparados, guardado bloqueado sin sesión administrativa real. Edición de colecciones bloqueada hasta recibir membresía completa. Los módulos sin endpoints se identifican como pendientes; no se mezclan sus ejemplos con datos de API.
+
+Validación: 52 pruebas y compilación correctas. npm run check:backend verificó Python real vía Vite: 8 productos activos, 3 categorías, 1 colección, detalle, filtros, paginación y render DOM sin errores. No prueba visual de navegador ni escrituras autorizadas reales.
+
+Copia aislada de backend ejecutándose para revisión local: C:/Users/bafar/Documents/Codex/2026-11-03/new-chat/outputs/backend-integration-check-5db5cc9. Iniciar desde allí con .venv/Scripts/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000 si se detiene. Sus datos son temporales. No se modificó su código ni se fusionaron ramas.
+
+Consultar docs/avance-10-adaptacion-api.md y docs/pendientes-backend-integracion.md. Para volver al prototipo local cambiar VITE_DATA_SOURCE=demo en .env.local y reiniciar Vite. Mantener GitHub pausado.
+
+## Historial — entrega 9
 
 Reportes tiene Detalles por pedido y ticket de preparación imprimible, con productos históricos, cantidades, color si se registró, importes y revisión de paquete. Referencia local de paquetería/guía existente por pedido. No genera etiqueta oficial ni contiene domicilio en pedidos locales. Consultar docs/avance-09-detalles-ticket.md. Validación: 39 pruebas y compilación correctas; impresión física/PDF pendiente. Se mantiene la cuenta obligatoria y la dependencia de API.
 

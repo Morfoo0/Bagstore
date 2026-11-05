@@ -21,7 +21,7 @@ const sections = {
 };
 type AdminSection = keyof typeof sections;
 
-export function setupAccess(catalogs: CatalogRepository): void {
+export function setupAccess(catalogs: CatalogRepository, manageLocalProducts = true): void {
   const form = node<HTMLFormElement>('#access-form');
   const password = node<HTMLInputElement>('#access-password');
   const feedback = node('#access-feedback');
@@ -126,7 +126,7 @@ export function setupAccess(catalogs: CatalogRepository): void {
     }
     window.scrollTo({ top: 0, behavior: 'instant' });
   }
-  setupProductManager(catalogs);
+  if (manageLocalProducts) setupProductManager(catalogs);
   window.addEventListener('hashchange', route);
   route();
 }
